@@ -277,4 +277,5 @@
 - Administración ofrece accesos rápidos, enlaces a cobro/detalle y cancelación confirmada de reservas activas; no se permite borrar reservas ni se modifican registros reales.
 - Clientes enlaza cada reserva con su detalle de cobro; el formulario administrativo distingue el anticipo inicial de referencia de los abonos realmente recibidos.
 - Se reemplazó el enlace placeholder de recuperación de contraseña por una indicación de contacto con administración y se ajustó el detalle para evitar construir JSX dentro de `try/catch`.
+- Con confirmación explícita, se corrigió en producción la única cancha activa “Campus Principal” de $80 a $80.000 COP/h. La agenda confirmó $80.000 COP por hora y $20.000 COP de anticipo; no se creó ninguna reserva.
 - Validación final: `npm.cmd test` (95 pruebas), `npm.cmd run build`, ESLint con las configuraciones flat de Next.js 16 (0 errores y 0 advertencias) y `git diff --check`, todo correcto.

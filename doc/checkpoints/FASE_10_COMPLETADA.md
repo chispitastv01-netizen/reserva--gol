@@ -72,4 +72,5 @@
 - El estado de ocupación se actualiza al confirmar y no se revierte ante respuestas de disponibilidad antiguas. La copia del código confirma con “Copiado”.
 - El panel ofrece accesos a Clientes, Resumen y Canchas, gestión de cobro desde reservas y cancelación con confirmación; las reservas permanecen en historial y no se borran.
 - Clientes ofrece acceso a cada detalle de cobro. El anticipo administrativo se presenta como referencia y no como dinero abonado.
+- Con autorización expresa, la tarifa de producción de la única cancha activa “Campus Principal” se ajustó a $80.000 COP/h. Se verificó en la agenda un total de $80.000 COP por hora y un anticipo de $20.000 COP; no se creó ninguna reserva.
 - Validación final: `npm.cmd test` (95 pruebas), `npm.cmd run build`, ESLint flat de Next.js 16 (0 errores/advertencias) y `git diff --check`, todo correcto.
