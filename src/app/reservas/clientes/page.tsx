@@ -32,8 +32,13 @@ export default async function ClientesPage() {
           <EstadoVacio titulo="No hay clientes" detalle="Agrega el primer cliente para empezar." />
         ) : (
           <ul className="lista-entidades">
-            {clientes.map((cliente) => (
-              <li className="fila-entidad cliente-fila" key={cliente.id}>
+            {clientes.map((cliente) => {
+              const reservasActivas = cliente.reservas.filter((reserva) => reserva.estado === 'activa').length;
+              const reservasCanceladas = cliente.reservas.length - reservasActivas;
+              const abonosRegistrados = cliente.reservas.reduce((total, reserva) => total + reserva.abonado, 0);
+
+              return (
+                <li className="fila-entidad cliente-fila" key={cliente.id}>
                 <div className="entidad-principal">
                   <h3>{cliente.nombre}</h3>
                   <p>Teléfono: {cliente.contacto}</p>
@@ -47,6 +52,13 @@ export default async function ClientesPage() {
                     <AccionDesactivar tipo="clientes" id={cliente.id} nombre={cliente.nombre} />
                   )}
                 </div>
+                <dl className="cliente-metricas">
+                  <div><dt>Reservas</dt><dd>{cliente.reservas.length}</dd></div>
+                  <div><dt>Activas</dt><dd>{reservasActivas}</dd></div>
+                  <div><dt>Canceladas</dt><dd>{reservasCanceladas}</dd></div>
+                  <div><dt>Abonos registrados</dt><dd>{formatearPesos(abonosRegistrados)}</dd></div>
+                </dl>
+                <p className="cliente-nota">Incluye historial cancelado; los abonos no se reducen por devoluciones.</p>
                 <div className="cliente-reservas">
                   <h4>Reservas</h4>
                   {cliente.reservas.length === 0 ? (
@@ -62,7 +74,7 @@ export default async function ClientesPage() {
                             <th scope="col">Horario</th>
                             <th scope="col">Total</th>
                             <th scope="col">Anticipo requerido</th>
-                            <th scope="col">Abonado</th>
+                            <th scope="col">Abonos registrados</th>
                             <th scope="col">Estado de pago</th>
                             <th scope="col">Reserva</th>
                           </tr>
@@ -77,7 +89,11 @@ export default async function ClientesPage() {
                               <td>{reserva.anticipoRequerido === null ? '—' : formatearPesos(reserva.anticipoRequerido)}</td>
                               <td>
                                 {formatearPesos(reserva.abonado)}
-                                <span className="cliente-saldo"> · saldo {formatearPesos(reserva.saldo)}</span>
+                                <span className="cliente-saldo">
+                                  {reserva.estado === 'activa'
+                                    ? ` · saldo ${formatearPesos(reserva.saldo)}`
+                                    : ' · saldo no exigible'}
+                                </span>
                               </td>
                               <td><InsigniaEstadoPago estado={reserva.estadoPago} /></td>
                               <td>
@@ -93,7 +109,8 @@ export default async function ClientesPage() {
                   )}
                 </div>
               </li>
-            ))}
+            );
+          })}
           </ul>
         )}
       </section>

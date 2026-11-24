@@ -74,8 +74,8 @@ export default async function ResumenPage({ searchParams }: Props) {
 
       <form className="resumen-filtros rounded-2xl border border-white/10 bg-[#131C2E]/90 p-5 shadow-sm" action="/reservas/resumen" method="get">
         <Campo etiqueta="Día de agenda" name="fecha" type="date" defaultValue={fecha} required />
-        <Campo etiqueta="Cobros desde" name="desde" type="date" defaultValue={desde} required />
-        <Campo etiqueta="Cobros hasta" name="hasta" type="date" defaultValue={hasta} required />
+        <Campo etiqueta="Reservas desde" name="desde" type="date" defaultValue={desde} required />
+        <Campo etiqueta="Reservas hasta" name="hasta" type="date" defaultValue={hasta} required />
         <Boton variante="secundario" type="submit">Consultar</Boton>
       </form>
 
@@ -90,7 +90,7 @@ export default async function ResumenPage({ searchParams }: Props) {
           <div className="tabla-contenedor agenda-global-contenedor">
             <table className="tabla-agenda-global">
               <caption>Franjas horarias del {formatearFecha(fecha)}</caption>
-              <thead className="bg-slate-100">
+              <thead className="bg-white/5">
                 <tr>
                   <th className="rounded-tl-lg" scope="col">Cancha</th>
                   {horas.map((hora) => <th className="last:rounded-tr-lg" scope="col" key={hora}>{formatearHora(hora)}</th>)}
@@ -98,7 +98,7 @@ export default async function ResumenPage({ searchParams }: Props) {
               </thead>
               <tbody>
                 {agenda.canchas.map((cancha) => (
-                  <tr className="transition-colors hover:bg-slate-50" key={cancha.canchaId}>
+                  <tr className="transition-colors hover:bg-white/5" key={cancha.canchaId}>
                     <th scope="row">{cancha.canchaNombre}</th>
                     {horas.map((hora) => {
                       const reservas = reservasDeLaHora(cancha.reservas, hora);
@@ -137,23 +137,30 @@ export default async function ResumenPage({ searchParams }: Props) {
         </div>
         <dl className="resumen-cifras">
           <div>
-            <dt>Total cobrado</dt>
-            <dd>{formatearPesos(cobros.totalCobrado)}</dd>
+            <dt>Abonos registrados</dt>
+            <dd>{formatearPesos(cobros.abonosRegistrados)}</dd>
           </div>
           <div>
-            <dt>Reservas del periodo</dt>
+            <dt>Reservas registradas</dt>
             <dd>{cobros.totalReservas}</dd>
           </div>
+          <div><dt>Activas</dt><dd>{cobros.reservasActivas}</dd></div>
+          <div><dt>Canceladas</dt><dd>{cobros.reservasCanceladas}</dd></div>
         </dl>
+        <p className="resumen-nota">
+          Se agrupa por fecha de reserva; los abonos incluyen reservas canceladas y no descuentan devoluciones.
+          El estado de pago es el actual de cada reserva.
+        </p>
         <div className="tabla-contenedor">
           <table className="tabla-reservas">
-            <thead className="bg-slate-100">
+            <caption>Reservas registradas por estado de pago actual</caption>
+            <thead className="bg-white/5">
               <tr><th className="rounded-tl-lg">Estado de pago</th><th className="rounded-tr-lg">Reservas</th></tr>
             </thead>
             <tbody>
-              <tr className="transition-colors hover:bg-slate-50"><td>Pendiente</td><td>{cobros.porEstado.pendiente}</td></tr>
-              <tr className="transition-colors hover:bg-slate-50"><td>Anticipo</td><td>{cobros.porEstado.anticipo}</td></tr>
-              <tr className="transition-colors hover:bg-slate-50"><td>Pagado</td><td>{cobros.porEstado.pagado}</td></tr>
+              <tr className="transition-colors hover:bg-white/5"><td>Pendiente</td><td>{cobros.porEstado.pendiente}</td></tr>
+              <tr className="transition-colors hover:bg-white/5"><td>Anticipo</td><td>{cobros.porEstado.anticipo}</td></tr>
+              <tr className="transition-colors hover:bg-white/5"><td>Pagado</td><td>{cobros.porEstado.pagado}</td></tr>
             </tbody>
           </table>
         </div>

@@ -1,4 +1,4 @@
-import { act, fireEvent, render, screen, waitFor } from '@testing-library/react';
+import { act, fireEvent, render, screen, waitFor, within } from '@testing-library/react';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { AgendaCliente } from '@/components/reservagol/AgendaCliente';
 import type { Cancha } from '@/lib/datos/tipos';
@@ -15,6 +15,8 @@ const CANCHA: Cancha = {
 const FECHAS = ['2026-11-12', '2026-11-13', '2026-11-14', '2026-11-15', '2026-11-16', '2026-11-17', '2026-11-18'];
 
 describe('AgendaCliente', () => {
+  let descriptorPortapapeles: PropertyDescriptor | undefined;
+
   beforeEach(() => {
     refresh.mockClear();
     fetchMock.mockReset().mockImplementation(async (url: string) => {
@@ -36,6 +38,7 @@ describe('AgendaCliente', () => {
               id: 'reserva-1',
               canchaNombre: CANCHA.nombre,
               estado: 'activa',
+              estadoPago: 'pendiente',
               valorTotal: 60000,
               anticipoRequerido: 15000,
             },
@@ -49,6 +52,12 @@ describe('AgendaCliente', () => {
     vi.stubGlobal('fetch', fetchMock);
   });
   afterEach(() => {
+    if (descriptorPortapapeles) {
+      Object.defineProperty(navigator, 'clipboard', descriptorPortapapeles);
+      descriptorPortapapeles = undefined;
+    } else {
+      Reflect.deleteProperty(navigator, 'clipboard');
+    }
     vi.useRealTimers();
     vi.restoreAllMocks();
     vi.unstubAllGlobals();
@@ -108,6 +117,12 @@ describe('AgendaCliente', () => {
 
   it('confirma en pantalla, marca la franja ocupada y no abre enlaces externos', async () => {
     const abrirWhatsApp = vi.spyOn(window, 'open').mockReturnValue(null);
+    descriptorPortapapeles = Object.getOwnPropertyDescriptor(navigator, 'clipboard');
+    const escribirPortapapeles = vi.fn().mockResolvedValue(undefined);
+    Object.defineProperty(navigator, 'clipboard', {
+      configurable: true,
+      value: { writeText: escribirPortapapeles },
+    });
     render(<AgendaCliente canchas={[CANCHA]} ocupadas={[]} fechas={FECHAS} hoy="2026-11-12" canchaInicial={CANCHA.id} />);
 
     fireEvent.click(screen.getAllByRole('button', { name: /libre/i })[0]!);
@@ -136,19 +151,82 @@ describe('AgendaCliente', () => {
       }),
     })));
     expect(JSON.parse(fetchMock.mock.calls[0]?.[1]?.body as string)).not.toHaveProperty('valorTotal');
-    expect(await screen.findByText('Código de reserva: reserva-1')).toBeInTheDocument();
-    expect(screen.getByText('Cancha: Cancha Norte')).toBeInTheDocument();
-    expect(screen.getByText(/Fecha:/)).toBeInTheDocument();
-    expect(screen.getByText('Hora: 06:00–07:00')).toBeInTheDocument();
-    expect(screen.getByText('Estado: Activa')).toBeInTheDocument();
+    expect(await screen.findByText('reserva-1')).toBeInTheDocument();
+    expect(screen.getByRole('heading', { name: 'Reserva confirmada' })).toBeInTheDocument();
+    const comprobante = within(screen.getByRole('status', { name: 'Comprobante de reserva confirmada' }));
+    expect(comprobante.getAllByText('Cancha Norte')).toHaveLength(2);
+    expect(comprobante.getAllByText('12 de noviembre de 2026')).toHaveLength(2);
+    expect(comprobante.getAllByText('06:00–07:00')).toHaveLength(2);
+    expect(comprobante.getAllByText('Activa')).toHaveLength(2);
     expect(document.querySelector('a[href^="https://wa.me"], a[href^="https://api.whatsapp.com/send"]')).toBeNull();
     expect(abrirWhatsApp).not.toHaveBeenCalled();
+    fireEvent.click(screen.getByRole('button', { name: 'Copiar código' }));
+    expect(await screen.findByRole('button', { name: 'Código copiado' })).toBeInTheDocument();
+    expect(escribirPortapapeles).toHaveBeenCalledWith('reserva-1');
+    fireEvent.click(screen.getByText('Ver detalle completo'));
+    expect(screen.getByText('Estado del pago')).toBeInTheDocument();
     expect(await screen.findByRole('button', { name: /06:00 ocupada/i })).toBeDisabled();
     expect(screen.queryByRole('heading', { name: 'Tu reserva' })).not.toBeInTheDocument();
     await waitFor(() => expect(fetchMock).toHaveBeenCalledWith(
       expect.stringContaining('/api/reservas/publica?desde='),
       expect.objectContaining({ cache: 'no-store' }),
     ));
+  });
+
+  it('conserva ocupada una reserva confirmada si termina tarde una lectura antigua', async () => {
+    let resolverDisponibilidad: ((respuesta: {
+      ok: true;
+      json: () => Promise<{ ok: true; datos: { ocupadas: never[] } }>;
+    }) => void) | undefined;
+    const disponibilidadPendiente = new Promise<{
+      ok: true;
+      json: () => Promise<{ ok: true; datos: { ocupadas: never[] } }>;
+    }>((resolve) => {
+      resolverDisponibilidad = resolve;
+    });
+    fetchMock.mockImplementation((url: string, opciones?: RequestInit) => {
+      if (opciones?.method === 'POST') {
+        return Promise.resolve({
+          ok: true,
+          text: async () => JSON.stringify({
+            ok: true,
+            datos: {
+              id: 'reserva-1',
+              canchaNombre: CANCHA.nombre,
+              estado: 'activa',
+              estadoPago: 'pendiente',
+              valorTotal: 60000,
+              anticipoRequerido: 15000,
+            },
+          }),
+        });
+      }
+      return disponibilidadPendiente;
+    });
+    render(<AgendaCliente canchas={[CANCHA]} ocupadas={[]} fechas={FECHAS} hoy="2026-11-12" canchaInicial={CANCHA.id} />);
+    fireEvent.click(screen.getAllByRole('button', { name: /06:00 libre/i })[0]!);
+    fireEvent.change(screen.getByLabelText('Nombre completo'), { target: { value: 'Ana Prueba' } });
+    fireEvent.change(screen.getByLabelText('Teléfono de contacto'), { target: { value: '3001234567' } });
+    fireEvent.change(screen.getByLabelText('Correo electrónico'), { target: { value: 'ana@example.com' } });
+    fireEvent.click(screen.getByLabelText(/acepto el tratamiento/i));
+    fireEvent.click(screen.getByRole('button', { name: 'Solicitar reserva' }));
+
+    expect(await screen.findByText('reserva-1')).toBeInTheDocument();
+    expect(await screen.findByRole('button', { name: /06:00 ocupada/i })).toBeDisabled();
+    await waitFor(() => expect(fetchMock).toHaveBeenCalledWith(
+      expect.stringContaining('/api/reservas/publica?desde='),
+      expect.objectContaining({ cache: 'no-store' }),
+    ));
+
+    await act(async () => {
+      resolverDisponibilidad?.({
+        ok: true,
+        json: async () => ({ ok: true, datos: { ocupadas: [] } }),
+      });
+      await Promise.resolve();
+    });
+
+    expect(screen.getByRole('button', { name: /06:00 ocupada/i })).toBeDisabled();
   });
 
   it('actualiza las celdas libres cuando otra reserva aparece en el servidor', async () => {

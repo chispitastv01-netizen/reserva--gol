@@ -38,5 +38,9 @@ describe('ClientesPage', () => {
     expect(screen.getByText('18:00–19:00')).toBeInTheDocument();
     expect(screen.getByText(/80\.000/)).toBeInTheDocument();
     expect(screen.getByText('Anticipo')).toBeInTheDocument();
+    expect(screen.getByRole('heading', { name: 'Reservas', level: 4 })).toBeInTheDocument();
+    expect(screen.getByText('Activas')).toBeInTheDocument();
+    expect(screen.getByText('Canceladas')).toBeInTheDocument();
+    expect(screen.getByText(/no se reducen por devoluciones/i)).toBeInTheDocument();
   });
 });

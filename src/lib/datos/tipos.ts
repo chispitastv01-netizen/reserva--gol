@@ -108,24 +108,28 @@ export type AgendaDia = {
 export type ResumenCobros = {
   desde: string;
   hasta: string;
-  totalCobrado: number;
+  abonosRegistrados: number;
   totalReservas: number;
+  reservasActivas: number;
+  reservasCanceladas: number;
   porEstado: Record<EstadoPago, number>;
 };
 
 export type ResumenAdministrador = {
   desde: string;
   hasta: string;
-  totalAlquileres: number;
-  alquileresActivos: number;
-  ingresos: number;
-  canchasAlquiladas: number;
+  totalReservas: number;
+  reservasActivas: number;
+  reservasCanceladas: number;
+  abonosRegistrados: number;
+  canchasOcupadas: number;
   reservas: ReservaResumenAdministrador[];
   porCancha: Array<{
     canchaId: string;
     canchaNombre: string;
-    alquileres: number;
-    ingresos: number;
+    reservasActivas: number;
+    reservasCanceladas: number;
+    abonosRegistrados: number;
   }>;
 };
 

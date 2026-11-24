@@ -57,9 +57,9 @@ describe('AgendaSemanal', () => {
     );
 
     fireEvent.click(screen.getAllByRole('button', { name: /libre/i })[0]!);
-    expect(screen.getByText('SEDE FIJADA')).toBeInTheDocument();
+    expect(screen.queryByText('SEDE FIJADA')).not.toBeInTheDocument();
     expect(screen.getByRole('heading', { name: 'Reserva Cancha Norte' })).toBeInTheDocument();
-    expect(screen.getByText(/Dirección de sede por confirmar/)).toBeInTheDocument();
+    expect(screen.getByText(/Santa Marta, Magdalena/)).toBeInTheDocument();
     expect(screen.getByText('09/11/2026 al 15/11/2026')).toBeInTheDocument();
     expect(screen.getByRole('link', { name: '7 días →' })).toHaveAttribute(
       'href',

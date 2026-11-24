@@ -201,7 +201,6 @@ export function AgendaSemanal({
       <header className="agenda-hero">
         <div className="agenda-hero-contenido">
           <div>
-            <span className="agenda-sede-badge">SEDE FIJADA</span>
             <p className="agenda-hero-kicker">ReservaGol · Disponibilidad en línea</p>
             <h1>Reserva {canchaSeleccionada?.nombre ?? 'Cancha Principal'}</h1>
             <p className="agenda-hero-descripcion"><MapPin aria-hidden="true" size={15} />{DIRECCION_SEDE} · Cancha sintética</p>

@@ -46,6 +46,7 @@ npm run db:demo
 ```
 
 En Vercel configura los nombres de las variables de conexión y autenticación en los entornos que uses (Development, Preview y Production). No compartas ni registres sus valores.
+La ubicación pública puede personalizarse con `NEXT_PUBLIC_RESERVAGOL_SEDE_DIRECCION`; si no se configura, se muestra Santa Marta, Magdalena, Colombia.
 
 Para desarrollo visual local, `npm run dev` es opcional; al terminar, vuelve a usar las URLs de producción indicadas arriba.
 
@@ -62,6 +63,8 @@ Para desarrollo visual local, `npm run dev` es opcional; al terminar, vuelve a u
 | `npm run db:demo` | Reemplazar y crear registros demo |
 | `npm run db:limpiar -- --prueba` | Eliminar datos de prueba sin borrar demos |
 | `npm run probar:flujo` | Probar el flujo de reservas y cobros contra la base |
+
+`db:limpiar -- --prueba` elimina las canchas/clientes con nombre iniciado por "Prueba" y sus reservas/abonos asociados. Es una acción destructiva sobre la base indicada en `.env.local`; confirma el destino antes de ejecutarla. No se ejecuta en cada despliegue.
 
 El servidor y las rutas API son Next.js; Vite solo se usa como infraestructura de pruebas de Vitest.
 

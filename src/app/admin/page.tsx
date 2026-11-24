@@ -48,27 +48,33 @@ export default async function AdminPage({ searchParams }: Props) {
       <p className="admin-periodo">{formatearFecha(desde)} – {formatearFecha(hasta)}</p>
 
       <section className="admin-metricas" aria-label="Indicadores del período">
-        <article className="admin-metrica"><span>Ingresos registrados</span><strong>{formatearPesos(resumen.ingresos)}</strong><small>Abonos efectivamente recibidos</small></article>
-        <article className="admin-metrica"><span>Total de alquileres</span><strong>{resumen.totalAlquileres}</strong><small>{resumen.alquileresActivos} activos en el período</small></article>
-        <article className="admin-metrica"><span>Canchas alquiladas</span><strong>{resumen.canchasAlquiladas}</strong><small>Con reservas activas en el período</small></article>
+        <article className="admin-metrica"><span>Abonos registrados</span><strong>{formatearPesos(resumen.abonosRegistrados)}</strong><small>De reservas del período; incluye canceladas y no descuenta reembolsos.</small></article>
+        <article className="admin-metrica"><span>Reservas registradas</span><strong>{resumen.totalReservas}</strong><small>{resumen.reservasActivas} activas · {resumen.reservasCanceladas} canceladas</small></article>
+        <article className="admin-metrica"><span>Canchas ocupadas</span><strong>{resumen.canchasOcupadas}</strong><small>Con reservas activas en el período</small></article>
       </section>
 
       <section className="admin-tabla-seccion" aria-labelledby="admin-canchas-titulo">
         <div className="seccion-cabecera">
-          <div><p className="seccion-kicker">Rendimiento</p><h2 id="admin-canchas-titulo">Alquileres por cancha</h2></div>
+          <div><p className="seccion-kicker">Rendimiento</p><h2 id="admin-canchas-titulo">Actividad por cancha</h2></div>
           <Link className="admin-enlace" href="/reservas/canchas">Gestionar canchas</Link>
         </div>
         <div className="tabla-contenedor">
           <table className="tabla-reservas">
-            <thead><tr><th>Cancha</th><th>Alquileres activos</th><th>Ingresos recibidos</th></tr></thead>
+            <thead><tr><th>Cancha</th><th>Reservas activas</th><th>Canceladas</th><th>Abonos registrados</th></tr></thead>
             <tbody>
               {resumen.porCancha.map((cancha) => (
-                <tr key={cancha.canchaId}><td>{cancha.canchaNombre}</td><td>{cancha.alquileres}</td><td>{formatearPesos(cancha.ingresos)}</td></tr>
+                <tr key={cancha.canchaId}>
+                  <td>{cancha.canchaNombre}</td>
+                  <td>{cancha.reservasActivas}</td>
+                  <td>{cancha.reservasCanceladas}</td>
+                  <td>{formatearPesos(cancha.abonosRegistrados)}</td>
+                </tr>
               ))}
-              {resumen.porCancha.length === 0 && <tr><td colSpan={3}>No hay canchas activas.</td></tr>}
+              {resumen.porCancha.length === 0 && <tr><td colSpan={4}>No hay canchas activas.</td></tr>}
             </tbody>
           </table>
         </div>
+        <p className="admin-nota">Los abonos reflejan pagos registrados para reservas con fecha en el período; no se descuentan devoluciones.</p>
       </section>
 
       <section className="admin-tabla-seccion" aria-labelledby="admin-reservas-titulo">
@@ -79,6 +85,7 @@ export default async function AdminPage({ searchParams }: Props) {
           </div>
           <Link className="admin-enlace" href="/reservas/clientes">Ver clientes</Link>
         </div>
+        <p className="admin-nota">El período filtra los indicadores. Esta tabla muestra el historial reciente completo, incluidas reservas canceladas.</p>
         <div className="tabla-contenedor">
           <table className="tabla-reservas">
             <thead>
@@ -91,7 +98,7 @@ export default async function AdminPage({ searchParams }: Props) {
                 <th>Horario</th>
                 <th>Total</th>
                 <th>Anticipo requerido</th>
-                <th>Recaudado</th>
+                <th>Abonado</th>
                 <th>Pago</th>
                 <th>Reserva</th>
               </tr>

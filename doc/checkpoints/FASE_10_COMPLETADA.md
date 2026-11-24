@@ -56,3 +56,12 @@
 - Se retiraron completamente la llamada a servicios WhatsApp y la apertura de enlaces externos.
 - Después de crear la reserva, la agenda marca la franja como ocupada y muestra en la misma página el comprobante con cancha, fecha, hora, estado, código y total.
 - No se requieren APIs ni credenciales de mensajería; el teléfono solo se conserva como dato de contacto.
+
+## Pulido P29
+
+- El hero ya no expone etiquetas internas y muestra una ubicación regional profesional, configurable con `NEXT_PUBLIC_RESERVAGOL_SEDE_DIRECCION`.
+- El comprobante tiene copia de código y detalle desplegable; las franjas confirmadas se conservan ocupadas aun si una lectura anterior de disponibilidad termina tarde.
+- Las métricas separan activas y canceladas; los importes se etiquetan como abonos registrados y se aclara la fecha de agrupación y el tratamiento de devoluciones.
+- Las tarjetas de cancha y los estados de disponibilidad usan transiciones sutiles con soporte para movimiento reducido.
+- La limpieza dirigida a registros "Prueba" está disponible con `npm run db:limpiar -- --prueba`; no se ejecutó sobre la base configurada.
+- Validación de esta iteración: 84 pruebas pasan y el build de producción termina correctamente.

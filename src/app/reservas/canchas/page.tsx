@@ -29,9 +29,9 @@ export default async function CanchasPage() {
         {canchas.length === 0 ? (
           <EstadoVacio titulo="No hay canchas" detalle="Agrega la primera cancha para empezar." />
         ) : (
-          <ul className="lista-entidades">
+          <ul className="lista-entidades lista-canchas">
             {canchas.map((cancha) => (
-              <li className="fila-entidad" key={cancha.id}>
+              <li className="fila-entidad tarjeta-cancha" key={cancha.id}>
                 <div className="entidad-principal">
                   <h3>{cancha.nombre}</h3>
                   <p>{formatearPesos(cancha.precioHora ?? PRECIO_HORA_BASE)}{cancha.precioHora == null ? ' · tarifa base' : ''}</p>

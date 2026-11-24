@@ -26,8 +26,10 @@ export async function agendaDelDia(fecha: string): Promise<AgendaDia> {
 }
 
 type FilaResumen = {
-  totalCobrado: number;
+  abonosRegistrados: number;
   totalReservas: number;
+  reservasActivas: number;
+  reservasCanceladas: number;
   pendiente: number;
   anticipo: number;
   pagado: number;
@@ -36,8 +38,10 @@ type FilaResumen = {
 export async function resumenCobros(desde: string, hasta: string): Promise<ResumenCobros> {
   const filas = await consultar<FilaResumen>(
     `SELECT
-       COALESCE(SUM(abonado), 0)::bigint AS "totalCobrado",
+       COALESCE(SUM(abonado), 0)::bigint AS "abonosRegistrados",
        COUNT(*)::int AS "totalReservas",
+       COUNT(*) FILTER (WHERE estado = 'activa')::int AS "reservasActivas",
+       COUNT(*) FILTER (WHERE estado = 'cancelada')::int AS "reservasCanceladas",
        COUNT(*) FILTER (WHERE abonado <= 0)::int AS pendiente,
        COUNT(*) FILTER (WHERE abonado > 0 AND abonado < valor_total)::int AS anticipo,
        COUNT(*) FILTER (WHERE abonado >= valor_total)::int AS pagado
@@ -50,8 +54,10 @@ export async function resumenCobros(desde: string, hasta: string): Promise<Resum
   return {
     desde,
     hasta,
-    totalCobrado: Number(fila?.totalCobrado ?? 0),
+    abonosRegistrados: Number(fila?.abonosRegistrados ?? 0),
     totalReservas: Number(fila?.totalReservas ?? 0),
+    reservasActivas: Number(fila?.reservasActivas ?? 0),
+    reservasCanceladas: Number(fila?.reservasCanceladas ?? 0),
     porEstado: {
       pendiente: Number(fila?.pendiente ?? 0),
       anticipo: Number(fila?.anticipo ?? 0),
@@ -61,17 +67,19 @@ export async function resumenCobros(desde: string, hasta: string): Promise<Resum
 }
 
 type FilaResumenAdministrador = {
-  totalAlquileres: number;
-  alquileresActivos: number;
-  ingresos: number;
-  canchasAlquiladas: number;
+  totalReservas: number;
+  reservasActivas: number;
+  reservasCanceladas: number;
+  abonosRegistrados: number;
+  canchasOcupadas: number;
 };
 
 type FilaCanchaAdministracion = {
   canchaId: string;
   canchaNombre: string;
-  alquileres: number;
-  ingresos: number;
+  reservasActivas: number;
+  reservasCanceladas: number;
+  abonosRegistrados: number;
 };
 
 type FilaReservaAdministracion = {
@@ -96,23 +104,25 @@ export async function resumenAdministrador(
   const [totales, canchas, reservas] = await Promise.all([
     consultar<FilaResumenAdministrador>(
       `SELECT
-         COUNT(*)::int AS "totalAlquileres",
-         COUNT(*) FILTER (WHERE estado = 'activa')::int AS "alquileresActivos",
-         COALESCE(SUM(abonado), 0)::bigint AS ingresos,
-         COUNT(DISTINCT cancha_id) FILTER (WHERE estado = 'activa')::int AS "canchasAlquiladas"
+         COUNT(*)::int AS "totalReservas",
+         COUNT(*) FILTER (WHERE estado = 'activa')::int AS "reservasActivas",
+         COUNT(*) FILTER (WHERE estado = 'cancelada')::int AS "reservasCanceladas",
+         COALESCE(SUM(abonado), 0)::bigint AS "abonosRegistrados",
+         COUNT(DISTINCT cancha_id) FILTER (WHERE estado = 'activa')::int AS "canchasOcupadas"
        FROM v_reservas
        WHERE fecha BETWEEN $1 AND $2`,
       [desde, hasta],
     ),
     consultar<FilaCanchaAdministracion>(
       `SELECT c.id AS "canchaId", c.nombre AS "canchaNombre",
-              COUNT(r.id) FILTER (WHERE r.estado = 'activa')::int AS alquileres,
-              COALESCE(SUM(r.abonado), 0)::bigint AS ingresos
+              COUNT(r.id) FILTER (WHERE r.estado = 'activa')::int AS "reservasActivas",
+              COUNT(r.id) FILTER (WHERE r.estado = 'cancelada')::int AS "reservasCanceladas",
+              COALESCE(SUM(r.abonado), 0)::bigint AS "abonosRegistrados"
        FROM canchas c
        LEFT JOIN v_reservas r ON r.cancha_id = c.id AND r.fecha BETWEEN $1 AND $2
        WHERE c.activa = true
        GROUP BY c.id, c.nombre
-       ORDER BY alquileres DESC, lower(c.nombre), c.id`,
+       ORDER BY "reservasActivas" DESC, lower(c.nombre), c.id`,
       [desde, hasta],
     ),
     consultar<FilaReservaAdministracion>(
@@ -139,10 +149,11 @@ export async function resumenAdministrador(
   return {
     desde,
     hasta,
-    totalAlquileres: Number(fila?.totalAlquileres ?? 0),
-    alquileresActivos: Number(fila?.alquileresActivos ?? 0),
-    ingresos: Number(fila?.ingresos ?? 0),
-    canchasAlquiladas: Number(fila?.canchasAlquiladas ?? 0),
+    totalReservas: Number(fila?.totalReservas ?? 0),
+    reservasActivas: Number(fila?.reservasActivas ?? 0),
+    reservasCanceladas: Number(fila?.reservasCanceladas ?? 0),
+    abonosRegistrados: Number(fila?.abonosRegistrados ?? 0),
+    canchasOcupadas: Number(fila?.canchasOcupadas ?? 0),
     reservas: reservas.map((reserva): ReservaResumenAdministrador => {
       const valorTotal = Number(reserva.valorTotal);
       const abonado = Number(reserva.abonado);
@@ -157,8 +168,9 @@ export async function resumenAdministrador(
     }),
     porCancha: canchas.map((cancha) => ({
       ...cancha,
-      alquileres: Number(cancha.alquileres),
-      ingresos: Number(cancha.ingresos),
+      reservasActivas: Number(cancha.reservasActivas),
+      reservasCanceladas: Number(cancha.reservasCanceladas),
+      abonosRegistrados: Number(cancha.abonosRegistrados),
     })),
   };
 }

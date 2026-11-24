@@ -37,10 +37,12 @@ describe('resúmenes de reservas', () => {
     ]);
   });
 
-  it('suma abonos y cuenta estados del periodo incluyendo reservas canceladas', async () => {
+  it('suma abonos y separa reservas activas y canceladas en el período', async () => {
     consultar.mockResolvedValue([{
-      totalCobrado: '70000',
+      abonosRegistrados: '70000',
       totalReservas: 3,
+      reservasActivas: 2,
+      reservasCanceladas: 1,
       pendiente: 1,
       anticipo: 1,
       pagado: 1,
@@ -55,8 +57,10 @@ describe('resúmenes de reservas', () => {
     expect(resumen).toEqual({
       desde: '2026-11-01',
       hasta: '2026-11-30',
-      totalCobrado: 70000,
+      abonosRegistrados: 70000,
       totalReservas: 3,
+      reservasActivas: 2,
+      reservasCanceladas: 1,
       porEstado: { pendiente: 1, anticipo: 1, pagado: 1 },
     });
   });
@@ -64,7 +68,13 @@ describe('resúmenes de reservas', () => {
   it('calcula las métricas de contaduría desde la vista compartida de reservas', async () => {
     consultar.mockImplementation(async (sql: string) => {
       if (sql.includes('FROM canchas c')) {
-        return [{ canchaId: 'cancha-1', canchaNombre: 'Cancha Norte', alquileres: '2', ingresos: '25000' }];
+        return [{
+          canchaId: 'cancha-1',
+          canchaNombre: 'Cancha Norte',
+          reservasActivas: '2',
+          reservasCanceladas: '1',
+          abonosRegistrados: '25000',
+        }];
       }
       if (sql.includes('JOIN clientes c')) {
         return [{
@@ -83,10 +93,11 @@ describe('resúmenes de reservas', () => {
         }];
       }
       return [{
-        totalAlquileres: '3',
-        alquileresActivos: '2',
-        ingresos: '25000',
-        canchasAlquiladas: '1',
+        totalReservas: '3',
+        reservasActivas: '2',
+        reservasCanceladas: '1',
+        abonosRegistrados: '25000',
+        canchasOcupadas: '1',
       }];
     });
 
@@ -101,10 +112,11 @@ describe('resúmenes de reservas', () => {
     expect(resumen).toEqual({
       desde: '2026-11-01',
       hasta: '2026-11-30',
-      totalAlquileres: 3,
-      alquileresActivos: 2,
-      ingresos: 25000,
-      canchasAlquiladas: 1,
+      totalReservas: 3,
+      reservasActivas: 2,
+      reservasCanceladas: 1,
+      abonosRegistrados: 25000,
+      canchasOcupadas: 1,
       reservas: [{
         id: 'reserva-1',
         clienteNombre: 'Ana Pérez',
@@ -121,7 +133,13 @@ describe('resúmenes de reservas', () => {
         estado: 'activa',
         estadoPago: 'anticipo',
       }],
-      porCancha: [{ canchaId: 'cancha-1', canchaNombre: 'Cancha Norte', alquileres: 2, ingresos: 25000 }],
+      porCancha: [{
+        canchaId: 'cancha-1',
+        canchaNombre: 'Cancha Norte',
+        reservasActivas: 2,
+        reservasCanceladas: 1,
+        abonosRegistrados: 25000,
+      }],
     });
   });
 });

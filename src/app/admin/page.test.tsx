@@ -8,23 +8,31 @@ vi.mock('@/lib/dataService', () => ({ resumenAdministrador }));
 vi.mock('next/navigation', () => ({ useRouter: () => ({ refresh: vi.fn() }) }));
 
 describe('AdminPage', () => {
-  it('presenta ingresos, alquileres y rendimiento de canchas del período', async () => {
+  it('presenta abonos registrados, reservas y rendimiento por cancha del período', async () => {
     resumenAdministrador.mockResolvedValue({
       desde: '2026-11-01',
       hasta: '2026-11-30',
-      totalAlquileres: 3,
-      alquileresActivos: 2,
-      ingresos: 70000,
-      canchasAlquiladas: 1,
+      totalReservas: 3,
+      reservasActivas: 2,
+      reservasCanceladas: 1,
+      abonosRegistrados: 70000,
+      canchasOcupadas: 1,
       reservas: [],
-      porCancha: [{ canchaId: 'cancha-1', canchaNombre: 'Cancha Norte', alquileres: 2, ingresos: 70000 }],
+      porCancha: [{
+        canchaId: 'cancha-1',
+        canchaNombre: 'Cancha Norte',
+        reservasActivas: 2,
+        reservasCanceladas: 1,
+        abonosRegistrados: 70000,
+      }],
     });
 
     render(await AdminPage({ searchParams: Promise.resolve({ desde: '2026-11-01', hasta: '2026-11-30' }) }));
 
     expect(screen.getByRole('heading', { name: 'Panel del propietario' })).toBeInTheDocument();
-    expect(screen.getByText('Total de alquileres')).toBeInTheDocument();
-    expect(screen.getByText('Canchas alquiladas')).toBeInTheDocument();
+    expect(screen.getByText('Reservas registradas')).toBeInTheDocument();
+    expect(screen.getByText('Canceladas')).toBeInTheDocument();
+    expect(screen.getByText('Canchas ocupadas')).toBeInTheDocument();
     expect(screen.getByText('Cancha Norte')).toBeInTheDocument();
     expect(screen.getByRole('link', { name: 'Administrar clientes' })).toHaveAttribute('href', '/reservas/clientes');
   });
@@ -33,10 +41,11 @@ describe('AdminPage', () => {
     resumenAdministrador.mockResolvedValue({
       desde: '2026-11-01',
       hasta: '2026-11-30',
-      totalAlquileres: 1,
-      alquileresActivos: 1,
-      ingresos: 25000,
-      canchasAlquiladas: 1,
+      totalReservas: 1,
+      reservasActivas: 1,
+      reservasCanceladas: 0,
+      abonosRegistrados: 25000,
+      canchasOcupadas: 1,
       reservas: [{
         id: 'reserva-1',
         clienteNombre: 'Ana Pérez',
@@ -70,10 +79,11 @@ describe('AdminPage', () => {
     resumenAdministrador.mockResolvedValue({
       desde: '2026-11-01',
       hasta: '2026-11-30',
-      totalAlquileres: 0,
-      alquileresActivos: 0,
-      ingresos: 0,
-      canchasAlquiladas: 0,
+      totalReservas: 0,
+      reservasActivas: 0,
+      reservasCanceladas: 0,
+      abonosRegistrados: 0,
+      canchasOcupadas: 0,
       reservas: [{
         id: 'reserva-diciembre',
         clienteNombre: 'Carlos Ruiz',

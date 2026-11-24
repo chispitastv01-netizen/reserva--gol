@@ -2322,20 +2322,6 @@ body {
   gap: 1.25rem;
 }
 
-.agenda-sede-badge {
-  display: inline-flex;
-  min-height: 1.55rem;
-  align-items: center;
-  padding: 0.25rem 0.6rem;
-  border: 1px solid rgba(236, 253, 245, 0.38);
-  border-radius: 999px;
-  background: rgba(236, 253, 245, 0.12);
-  color: #ecfdf5;
-  font-size: 0.66rem;
-  font-weight: 800;
-  letter-spacing: 0.06em;
-}
-
 .agenda-hero-kicker {
   margin: 0.85rem 0 0.3rem;
   color: #a7f3d0;
@@ -3052,8 +3038,337 @@ body {
   color: #6ee7b7;
 }
 
-.public-booking-confirmada a {
-  color: #34d399;
+.public-booking-hero {
+  display: grid;
+  justify-items: center;
+  border: 0;
+  background: transparent;
+  box-shadow: none;
+  text-align: center;
+  color: #fff;
+}
+
+.public-booking-hero h1 {
+  color: #fff;
+  font-weight: 800;
+}
+
+.public-booking-hero > .public-booking-kicker {
+  margin: 0 0 0.5rem;
+  color: #6ee7b7;
+  font-size: 0.72rem;
+  font-weight: 800;
+  letter-spacing: 0.16em;
+}
+
+.public-booking-hero > .public-booking-ubicacion {
+  color: #d1d5db;
+}
+
+.public-booking-confirmada {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  gap: 1rem;
+  justify-content: stretch;
+  padding: 1.2rem;
+  border-color: rgba(16, 185, 129, 0.3);
+  border-radius: 1.1rem;
+  background:
+    radial-gradient(ellipse at 100% 0, rgba(16, 185, 129, 0.1), transparent 44%),
+    rgba(19, 28, 46, 0.96);
+  box-shadow: 0 18px 45px rgba(0, 0, 0, 0.24);
+  animation: comprobante-aparece 240ms ease-out both;
+}
+
+.comprobante-cabecera,
+.comprobante-codigo {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+}
+
+.comprobante-cabecera > div {
+  display: grid;
+  gap: 0.25rem;
+}
+
+.comprobante-cabecera p,
+.comprobante-codigo span {
+  margin: 0;
+  color: var(--muted);
+  font-size: 0.7rem;
+  font-weight: 750;
+  letter-spacing: 0.09em;
+  text-transform: uppercase;
+}
+
+.comprobante-cabecera h2 {
+  margin: 0;
+  color: var(--text);
+  font-size: 1.2rem;
+}
+
+.comprobante-estado {
+  flex: 0 0 auto;
+  padding: 0.4rem 0.7rem;
+  border: 1px solid rgba(16, 185, 129, 0.32);
+  border-radius: 999px;
+  background: rgba(16, 185, 129, 0.12);
+  color: #6ee7b7;
+  font-size: 0.75rem;
+  font-weight: 750;
+}
+
+.comprobante-resumen {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 0.7rem;
+  margin: 0;
+}
+
+.comprobante-resumen > div,
+.comprobante-detalles dl > div {
+  display: grid;
+  min-width: 0;
+  gap: 0.25rem;
+}
+
+.comprobante-resumen dt,
+.comprobante-detalles dt {
+  color: var(--muted);
+  font-size: 0.75rem;
+}
+
+.comprobante-resumen dd,
+.comprobante-detalles dd {
+  margin: 0;
+  color: var(--text);
+  font-size: 0.9rem;
   font-weight: 700;
+}
+
+.comprobante-codigo {
+  padding: 0.85rem;
+  border: 1px solid var(--line);
+  border-radius: 0.8rem;
+  background: rgba(9, 13, 22, 0.5);
+}
+
+.comprobante-codigo > div {
+  display: grid;
+  min-width: 0;
+  gap: 0.35rem;
+}
+
+.comprobante-codigo code {
+  overflow-wrap: anywhere;
+  color: #a7f3d0;
+  font-size: 0.9rem;
+  font-weight: 750;
+}
+
+.comprobante-copiar {
+  flex: 0 0 auto;
+}
+
+.comprobante-detalles {
+  border-top: 1px solid var(--line);
+  padding-top: 0.75rem;
+}
+
+.comprobante-detalles summary {
+  width: fit-content;
+  color: #6ee7b7;
+  font-size: 0.82rem;
+  font-weight: 750;
+  cursor: pointer;
   text-underline-offset: 3px;
+}
+
+.comprobante-detalles summary:hover {
+  text-decoration: underline;
+}
+
+.comprobante-detalles dl {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 0.8rem 1rem;
+  margin: 1rem 0 0;
+}
+
+.lista-canchas {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 16rem), 1fr));
+  gap: 0.85rem;
+  border: 0;
+}
+
+.lista-canchas .tarjeta-cancha {
+  min-height: 8.5rem;
+  align-items: stretch;
+  flex-direction: column;
+  justify-content: space-between;
+  padding: 1.1rem;
+  border: 1px solid var(--line);
+  border-radius: 1rem;
+  background: linear-gradient(145deg, rgba(19, 28, 46, 0.98), rgba(11, 18, 32, 0.92));
+  transition: transform 180ms ease, border-color 180ms ease, box-shadow 180ms ease;
+}
+
+.lista-canchas .tarjeta-cancha:hover {
+  transform: translateY(-2px);
+  border-color: rgba(16, 185, 129, 0.38);
+  box-shadow: 0 14px 32px rgba(0, 0, 0, 0.24);
+}
+
+.lista-canchas .entidad-principal h3 {
+  font-size: 1rem;
+}
+
+.lista-canchas .entidad-acciones {
+  justify-content: space-between;
+}
+
+.admin-metrica,
+.admin-tabla-seccion,
+.admin-accesos a {
+  transition: border-color 180ms ease, box-shadow 180ms ease, transform 180ms ease;
+}
+
+.admin-metrica:hover {
+  transform: translateY(-2px);
+  border-color: rgba(16, 185, 129, 0.3);
+  box-shadow: 0 16px 38px rgba(0, 0, 0, 0.3);
+}
+
+.admin-nota,
+.resumen-nota,
+.cliente-nota {
+  margin: 0.7rem 0 0;
+  color: var(--muted);
+  font-size: 0.78rem;
+  line-height: 1.55;
+}
+
+.cliente-metricas {
+  display: grid;
+  grid-column: 1 / -1;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 0.65rem;
+  margin: 0;
+}
+
+.cliente-metricas > div {
+  display: grid;
+  gap: 0.25rem;
+  padding: 0.75rem;
+  border: 1px solid var(--line);
+  border-radius: 0.75rem;
+  background: rgba(9, 13, 22, 0.36);
+}
+
+.cliente-metricas dt {
+  color: var(--muted);
+  font-size: 0.72rem;
+}
+
+.cliente-metricas dd {
+  margin: 0;
+  color: var(--text);
+  font-size: 0.95rem;
+  font-weight: 750;
+  font-variant-numeric: tabular-nums;
+}
+
+.cliente-nota {
+  grid-column: 1 / -1;
+  margin-top: -0.5rem;
+}
+
+.cliente-reservas h4 {
+  color: var(--text);
+}
+
+.cliente-saldo,
+.cliente-sin-reservas {
+  color: var(--muted);
+}
+
+.resumen-cifras {
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+}
+
+.agenda-matriz-tabla .agenda-celda {
+  transition: background-color 180ms ease, border-color 180ms ease, color 180ms ease, box-shadow 180ms ease;
+}
+
+.agenda-matriz-tabla .agenda-celda--ocupada {
+  border-color: rgba(239, 68, 68, 0.42);
+  background: linear-gradient(135deg, rgba(239, 68, 68, 0.2), rgba(127, 29, 29, 0.22));
+  color: #fecaca;
+}
+
+.agenda-matriz-tabla .agenda-celda--ocupada .agenda-badge--ocupada {
+  background: rgba(239, 68, 68, 0.2);
+  color: #fecaca;
+}
+
+.agenda-matriz-tabla .agenda-celda:disabled {
+  cursor: not-allowed;
+}
+
+.agenda-celda--libre:hover:not(:disabled),
+.boton:hover:not(:disabled),
+.public-owner-link,
+.agenda-semana-boton {
+  transition: color 160ms ease, background-color 160ms ease, border-color 160ms ease, box-shadow 160ms ease;
+}
+
+@keyframes comprobante-aparece {
+  from {
+    opacity: 0;
+    transform: translateY(6px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@media (max-width: 760px) {
+  .cliente-metricas {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .resumen-cifras {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+@media (max-width: 520px) {
+  .comprobante-resumen,
+  .comprobante-detalles dl {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .comprobante-codigo {
+    align-items: stretch;
+    flex-direction: column;
+  }
+
+  .comprobante-copiar {
+    width: 100%;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    scroll-behavior: auto !important;
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
 }

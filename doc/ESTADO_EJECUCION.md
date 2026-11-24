@@ -260,3 +260,12 @@
 - Se eliminó el envío externo y toda apertura/enlace a WhatsApp del flujo de reserva; la confirmación no requiere APIs ni variables externas.
 - Tras recibir la reserva persistida, la franja se marca ocupada y la misma página muestra cancha, fecha, hora, estado, código y total.
 - Se retiraron el consentimiento adicional, las variables de entorno y las pruebas de la integración WhatsApp; el teléfono queda como dato de contacto.
+
+### P29 · Pulido de producción y métricas coherentes · 2026-11-23
+
+- Se limpió el hero público y se configuró una ubicación regional legible con override opcional para la dirección real.
+- El comprobante en pantalla permite copiar el código y desplegar el detalle completo; una reserva confirmada se conserva visualmente ocupada frente a respuestas de disponibilidad antiguas.
+- Contaduría, Clientes y Resumen separan reservas activas/canceladas y nombran los importes como abonos registrados, explicando que se agrupan por fecha de reserva y no descuentan devoluciones.
+- Se renovaron las tarjetas de canchas, los estados de ocupación y las transiciones respetando `prefers-reduced-motion`.
+- La limpieza selectiva `db:limpiar -- --prueba` queda documentada; no se borraron datos de una base real durante este cambio.
+- Validación: `npm.cmd test` (84 pruebas) y `npm.cmd run build` completados sin errores.

@@ -16,8 +16,10 @@ describe('GET /api/reservas/resumen', () => {
     resumenCobros.mockReset().mockResolvedValue({
       desde: '2026-11-01',
       hasta: '2026-11-30',
-      totalCobrado: 70000,
+      abonosRegistrados: 70000,
       totalReservas: 3,
+      reservasActivas: 2,
+      reservasCanceladas: 1,
       porEstado: { pendiente: 1, anticipo: 1, pagado: 1 },
     });
   });
@@ -31,7 +33,12 @@ describe('GET /api/reservas/resumen', () => {
     expect(respuesta.headers.get('Cache-Control')).toBe('no-store');
     expect(await respuesta.json()).toMatchObject({
       ok: true,
-      datos: { totalCobrado: 70000, totalReservas: 3 },
+      datos: {
+        abonosRegistrados: 70000,
+        totalReservas: 3,
+        reservasActivas: 2,
+        reservasCanceladas: 1,
+      },
     });
     expect(resumenCobros).toHaveBeenCalledWith('2026-11-01', '2026-11-30');
   });

@@ -1,7 +1,7 @@
 'use client';
 
 import { useRouter } from 'next/navigation';
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import { MapPin } from 'lucide-react';
 import { Aviso } from '@/components/ui/Aviso';
 import { Boton } from '@/components/ui/Boton';
@@ -36,6 +36,7 @@ type ConfirmacionReserva = {
   horaInicio: string;
   horaFin: string;
   estado: 'activa';
+  estadoPago: 'pendiente';
 };
 
 function etiquetaDia(fecha: string) {
@@ -56,6 +57,13 @@ function sumarDias(fecha: string, dias: number) {
   return resultado.toISOString().slice(0, 10);
 }
 
+function mismoBloque(a: BloqueOcupadoPublico, b: BloqueOcupadoPublico) {
+  return a.canchaId === b.canchaId &&
+    a.fecha === b.fecha &&
+    a.horaInicio === b.horaInicio &&
+    a.horaFin === b.horaFin;
+}
+
 export function AgendaCliente({ canchas, ocupadas, fechas, hoy, canchaInicial }: Props) {
   const router = useRouter();
   const [canchaId, setCanchaId] = useState(canchaInicial);
@@ -70,6 +78,8 @@ export function AgendaCliente({ canchas, ocupadas, fechas, hoy, canchaInicial }:
   const [guardando, setGuardando] = useState(false);
   const [aviso, setAviso] = useState<{ tipo: 'exito' | 'error'; texto: string } | null>(null);
   const [confirmacion, setConfirmacion] = useState<ConfirmacionReserva | null>(null);
+  const [codigoCopiado, setCodigoCopiado] = useState(false);
+  const confirmacionesLocales = useRef<BloqueOcupadoPublico[]>([]);
   const cancha = canchas.find((item) => item.id === canchaId);
   const visibles = fechas.filter((fecha) => fecha >= hoy).slice(0, 7);
   const inicioRango = visibles[0] ?? hoy;
@@ -93,7 +103,23 @@ export function AgendaCliente({ canchas, ocupadas, fechas, hoy, canchaInicial }:
     if (!cancha || fecha < hoy || ocupada) return;
     setSeleccion({ fecha, horaInicio, horaFin });
     setConfirmacion(null);
+    setCodigoCopiado(false);
     setAviso(null);
+  }
+
+  async function copiarCodigoReserva() {
+    if (!confirmacion) return;
+    try {
+      if (!navigator.clipboard?.writeText) throw new Error('Portapapeles no disponible.');
+      await navigator.clipboard.writeText(confirmacion.id);
+      setCodigoCopiado(true);
+      setAviso(null);
+    } catch (error) {
+      console.error('No se pudo copiar el código de reserva.', {
+        tipo: error instanceof Error ? error.name : 'Error desconocido',
+      });
+      setAviso({ tipo: 'error', texto: 'No se pudo copiar el código. Puedes seleccionarlo y copiarlo manualmente.' });
+    }
   }
 
   const actualizarDisponibilidad = useCallback(async (signal?: AbortSignal) => {
@@ -110,7 +136,12 @@ export function AgendaCliente({ canchas, ocupadas, fechas, hoy, canchaInicial }:
       if (!response.ok || !resultado.ok || !Array.isArray(resultado.datos?.ocupadas)) {
         throw new Error('Respuesta inválida al consultar disponibilidad.');
       }
-      setBloquesOcupados(resultado.datos.ocupadas);
+      const ocupadasServidor = resultado.datos.ocupadas;
+      const pendientesLocales = confirmacionesLocales.current.filter((local) =>
+        !ocupadasServidor.some((delServidor) => mismoBloque(local, delServidor))
+      );
+      confirmacionesLocales.current = pendientesLocales;
+      setBloquesOcupados([...ocupadasServidor, ...pendientesLocales]);
       setErrorDisponibilidad(false);
     } catch (error) {
       if (!signal?.aborted) {
@@ -160,6 +191,7 @@ export function AgendaCliente({ canchas, ocupadas, fechas, hoy, canchaInicial }:
           valorTotal?: unknown;
           anticipoRequerido?: unknown;
           estado?: unknown;
+          estadoPago?: unknown;
         };
         error?: { codigo?: string; mensaje?: string };
       };
@@ -198,6 +230,7 @@ export function AgendaCliente({ canchas, ocupadas, fechas, hoy, canchaInicial }:
       const idReserva = resultado.datos?.id;
       const canchaNombre = resultado.datos?.canchaNombre;
       const estadoReserva = resultado.datos?.estado;
+      const estadoPago = resultado.datos?.estadoPago;
       if (
         typeof valorTotal !== 'number' ||
         !Number.isSafeInteger(valorTotal) ||
@@ -205,7 +238,8 @@ export function AgendaCliente({ canchas, ocupadas, fechas, hoy, canchaInicial }:
         !Number.isSafeInteger(anticipoRequerido) ||
         typeof idReserva !== 'string' ||
         typeof canchaNombre !== 'string' ||
-        estadoReserva !== 'activa'
+        estadoReserva !== 'activa' ||
+        estadoPago !== 'pendiente'
       ) {
         throw new Error('Respuesta inválida al confirmar la reserva.');
       }
@@ -218,18 +252,22 @@ export function AgendaCliente({ canchas, ocupadas, fechas, hoy, canchaInicial }:
         horaInicio: seleccion.horaInicio,
         horaFin: seleccion.horaFin,
         estado: estadoReserva,
+        estadoPago,
       });
-      setBloquesOcupados((actuales) => [
-        ...actuales,
-        {
-          canchaId,
-          fecha: seleccion.fecha,
-          horaInicio: seleccion.horaInicio,
-          horaFin: seleccion.horaFin,
-        },
-      ]);
+      const bloqueConfirmado = {
+        canchaId,
+        fecha: seleccion.fecha,
+        horaInicio: seleccion.horaInicio,
+        horaFin: seleccion.horaFin,
+      };
+      confirmacionesLocales.current = [...confirmacionesLocales.current, bloqueConfirmado];
+      setBloquesOcupados((actuales) =>
+        actuales.some((actual) => mismoBloque(actual, bloqueConfirmado))
+          ? actuales
+          : [...actuales, bloqueConfirmado]
+      );
       setSeleccion(null);
-      setAviso({ tipo: 'exito', texto: 'Reserva confirmada.' });
+      setCodigoCopiado(false);
       void actualizarDisponibilidad();
       router.refresh();
     } catch (error) {
@@ -243,14 +281,13 @@ export function AgendaCliente({ canchas, ocupadas, fechas, hoy, canchaInicial }:
   return (
     <main className="app-contenido public-booking">
       <header className="public-booking-hero">
-        <span className="agenda-sede-badge">SEDE FIJADA</span>
-        <p>ReservaGol · Reservas en línea</p>
+        <p className="public-booking-kicker">RESERVAS DEPORTIVAS</p>
         <h1>Tu próxima cancha empieza aquí</h1>
-        <div><MapPin size={16} aria-hidden="true" />{DIRECCION_SEDE}</div>
+        <div className="public-booking-ubicacion"><MapPin size={16} aria-hidden="true" />{DIRECCION_SEDE}</div>
       </header>
 
       <section className="public-booking-filtros" aria-label="Seleccionar cancha y fecha">
-        <Selector etiqueta="Cancha" value={canchaId} onChange={(event) => { setCanchaId(event.target.value); setSeleccion(null); setConfirmacion(null); }}>
+        <Selector etiqueta="Cancha" value={canchaId} onChange={(event) => { setCanchaId(event.target.value); setSeleccion(null); setConfirmacion(null); setCodigoCopiado(false); }}>
           {canchas.map((item) => <option value={item.id} key={item.id}>{item.nombre}</option>)}
         </Selector>
         <div className="agenda-semana-navegacion">
@@ -261,14 +298,37 @@ export function AgendaCliente({ canchas, ocupadas, fechas, hoy, canchaInicial }:
       </section>
 
       {confirmacion && (
-        <section className="public-booking-confirmada" role="status">
-          <strong>Reserva confirmada</strong>
-          <span>Cancha: {confirmacion.canchaNombre}</span>
-          <span>Fecha: {formatearFecha(confirmacion.fecha)}</span>
-          <span>Hora: {formatearHora(confirmacion.horaInicio)}–{formatearHora(confirmacion.horaFin)}</span>
-          <span>Estado: {confirmacion.estado === 'activa' ? 'Activa' : confirmacion.estado}</span>
-          <span>Código de reserva: {confirmacion.id}</span>
-          <span>Total: {formatearPesos(confirmacion.total)} · Anticipo pendiente: {formatearPesos(confirmacion.anticipo)}</span>
+        <section className="public-booking-confirmada" role="status" aria-label="Comprobante de reserva confirmada">
+          <div className="comprobante-cabecera">
+            <div>
+              <p>COMPROBANTE DE RESERVA</p>
+              <h2>Reserva confirmada</h2>
+            </div>
+            <span className="comprobante-estado">Activa</span>
+          </div>
+          <dl className="comprobante-resumen">
+            <div><dt>Cancha</dt><dd>{confirmacion.canchaNombre}</dd></div>
+            <div><dt>Fecha</dt><dd>{formatearFecha(confirmacion.fecha)}</dd></div>
+            <div><dt>Horario</dt><dd>{formatearHora(confirmacion.horaInicio)}–{formatearHora(confirmacion.horaFin)}</dd></div>
+          </dl>
+          <div className="comprobante-codigo">
+            <div><span>Código de reserva</span><code>{confirmacion.id}</code></div>
+            <Boton variante="secundario" className="comprobante-copiar" type="button" onClick={copiarCodigoReserva}>
+              {codigoCopiado ? 'Código copiado' : 'Copiar código'}
+            </Boton>
+          </div>
+          <details className="comprobante-detalles">
+            <summary>Ver detalle completo</summary>
+            <dl>
+              <div><dt>Cancha</dt><dd>{confirmacion.canchaNombre}</dd></div>
+              <div><dt>Fecha</dt><dd>{formatearFecha(confirmacion.fecha)}</dd></div>
+              <div><dt>Horario</dt><dd>{formatearHora(confirmacion.horaInicio)}–{formatearHora(confirmacion.horaFin)}</dd></div>
+              <div><dt>Estado de la reserva</dt><dd>Activa</dd></div>
+              <div><dt>Estado del pago</dt><dd>Pendiente</dd></div>
+              <div><dt>Total</dt><dd>{formatearPesos(confirmacion.total)}</dd></div>
+              <div><dt>Anticipo inicial (25%)</dt><dd>{formatearPesos(confirmacion.anticipo)}</dd></div>
+            </dl>
+          </details>
         </section>
       )}
       {errorDisponibilidad && (
