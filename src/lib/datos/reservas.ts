@@ -161,11 +161,11 @@ export async function listarBloquesOcupadosPublicos(
 
 export async function crearReservaPublica(
   datos: DatosReservaPublica,
-): Promise<{ id: string; valorTotal: number }> {
+): Promise<{ id: string; valorTotal: number; canchaNombre: string }> {
   try {
     return await conTransaccion(async (tx) => {
-      const resultadoCancha = await tx.query<{ precioHora: number | null }>(
-        `SELECT precio_hora AS "precioHora"
+      const resultadoCancha = await tx.query<{ canchaNombre: string; precioHora: number | null }>(
+        `SELECT nombre AS "canchaNombre", precio_hora AS "precioHora"
          FROM canchas WHERE id = $1 AND activa = true FOR UPDATE`,
         [datos.canchaId],
       );
@@ -223,7 +223,7 @@ export async function crearReservaPublica(
       );
       const id = reserva.rows[0]?.id;
       if (!id) throw new ErrorDeNegocio('ERROR_INTERNO');
-      return { id, valorTotal };
+      return { id, valorTotal, canchaNombre: cancha.canchaNombre };
     });
   } catch (error) {
     return mapearErrorDeReserva(error);

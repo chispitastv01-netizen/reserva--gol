@@ -19,6 +19,7 @@ La navegación dentro de la aplicación usa rutas relativas y conserva el domini
 - Creación y cancelación de reservas con comprobación transaccional de solapes.
 - Cobro mediante abonos; pendiente, anticipo y pagado se derivan de los valores registrados.
 - Autenticación de administrador con cookie firmada.
+- Comprobante de reserva por WhatsApp, con integración API opcional y enlace de respaldo.
 
 Las franjas son semiabiertas `[inicio, fin)`: 18:00–19:00 y 19:00–20:00 son consecutivas y no chocan.
 
@@ -47,6 +48,12 @@ npm run db:demo
 En Vercel configura los nombres de las variables de conexión y autenticación en los entornos que uses (Development, Preview y Production). No compartas ni registres sus valores.
 
 Para desarrollo visual local, `npm run dev` es opcional; al terminar, vuelve a usar las URLs de producción indicadas arriba.
+
+### Comprobantes por WhatsApp
+
+El flujo público solicita el número y consentimiento explícito para el comprobante. Después de guardar la reserva activa, el servidor intenta entregar el recibo mediante un endpoint HTTPS configurado con `RESERVAGOL_WHATSAPP_API_URL`; `RESERVAGOL_WHATSAPP_API_TOKEN` es opcional y se envía como Bearer. El endpoint debe aceptar `POST` JSON con `evento`, `para` (número internacional en dígitos), `mensaje` y los datos de `reserva` (incluye cancha, fecha, hora, total, código y estado), y responder con un estado HTTP 2xx al aceptar el envío. El endpoint puede conectar un webhook propio con WhatsApp Cloud API; la respuesta 2xx significa aceptación del proveedor, no confirmación de entrega al dispositivo.
+
+Si no hay endpoint o falla/rechaza el proveedor, la reserva sigue confirmada y la pantalla abre un enlace de WhatsApp con el comprobante listo para enviar, además de conservar un enlace manual por si el navegador bloquea la ventana. La integración externa tiene un límite de espera de 2,5 segundos.
 
 ## Scripts
 

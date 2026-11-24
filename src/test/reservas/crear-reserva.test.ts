@@ -23,7 +23,7 @@ describe('crearReserva con cliente nuevo', () => {
     vi.useFakeTimers();
     vi.setSystemTime(new Date('2026-11-19T17:00:00.000Z'));
     query.mockReset().mockImplementation(async (sql: string) => {
-      if (sql.includes('SELECT precio_hora')) return { rows: [{ precioHora: 50000 }] };
+      if (sql.includes('FROM canchas')) return { rows: [{ canchaNombre: 'Cancha Norte', precioHora: 50000 }] };
       if (sql.includes('INSERT INTO clientes')) return { rows: [{ id: CLIENTE_ID }] };
       if (sql.includes('SELECT hora_inicio AS')) return { rows: [] };
       if (sql.includes('INSERT INTO reservas')) return { rows: [{ id: RESERVA_ID }] };
@@ -103,9 +103,10 @@ describe('crearReserva con cliente nuevo', () => {
       horaFin: '20:00',
       metodoAnticipo: 'transferencia',
       politicasAceptadas: true,
+      comprobanteWhatsappAceptado: true,
     });
 
-    expect(reserva).toEqual({ id: RESERVA_ID, valorTotal: 100000 });
+    expect(reserva).toEqual({ id: RESERVA_ID, valorTotal: 100000, canchaNombre: 'Cancha Norte' });
     expect(conTransaccion).toHaveBeenCalledOnce();
     expect(query).toHaveBeenCalledWith(
       expect.stringContaining('INSERT INTO clientes'),
@@ -132,10 +133,11 @@ describe('crearReserva con cliente nuevo', () => {
       horaFin: '20:00',
       metodoAnticipo: 'transferencia',
       politicasAceptadas: true,
+      comprobanteWhatsappAceptado: true,
     });
 
-    expect(reserva).toEqual({ id: RESERVA_ID, valorTotal: 100000 });
-    expect(query).toHaveBeenCalledWith(expect.stringContaining('SELECT precio_hora'), [CANCHA_ID]);
+    expect(reserva).toEqual({ id: RESERVA_ID, valorTotal: 100000, canchaNombre: 'Cancha Norte' });
+    expect(query).toHaveBeenCalledWith(expect.stringContaining('FROM canchas'), [CANCHA_ID]);
     expect(query.mock.calls.find(([sql]) => sql.includes('INSERT INTO reservas'))?.[1]).toEqual([
       CANCHA_ID,
       CLIENTE_ID,
@@ -149,7 +151,7 @@ describe('crearReserva con cliente nuevo', () => {
 
   it('usa tarifa base de 60000 cuando la columna aún retorna null', async () => {
     query.mockImplementationOnce(async (sql: string) => {
-      if (sql.includes('SELECT precio_hora')) return { rows: [{ precioHora: null }] };
+      if (sql.includes('FROM canchas')) return { rows: [{ canchaNombre: 'Cancha Norte', precioHora: null }] };
       return { rows: [] };
     });
 
@@ -161,9 +163,11 @@ describe('crearReserva con cliente nuevo', () => {
       horaFin: '19:00',
       metodoAnticipo: 'transferencia',
       politicasAceptadas: true,
+      comprobanteWhatsappAceptado: true,
     });
 
     expect(reserva.valorTotal).toBe(60000);
+    expect(reserva.canchaNombre).toBe('Cancha Norte');
     expect(query.mock.calls.find(([sql]) => sql.includes('INSERT INTO reservas'))?.[1]?.[5]).toBe(60000);
   });
 });

@@ -30,7 +30,19 @@ describe('AgendaCliente', () => {
               }],
             },
           }
-        : { ok: true, datos: { id: 'reserva-1', valorTotal: 60000, anticipoRequerido: 15000 } };
+        : {
+            ok: true,
+            datos: {
+              id: 'reserva-1',
+              canchaNombre: CANCHA.nombre,
+              valorTotal: 60000,
+              anticipoRequerido: 15000,
+              comprobanteWhatsApp: {
+                estado: 'respaldo',
+                enlaceRespaldo: 'https://wa.me/573001234567?text=reserva',
+              },
+            },
+          };
       return {
         ok: true,
         json: async () => resultado,
@@ -83,6 +95,7 @@ describe('AgendaCliente', () => {
     fireEvent.change(screen.getByLabelText('WhatsApp'), { target: { value: '3001234567' } });
     fireEvent.change(screen.getByLabelText('Correo electrónico'), { target: { value: 'ana@example.com' } });
     fireEvent.click(screen.getByLabelText(/acepto el tratamiento/i));
+    fireEvent.click(screen.getByLabelText(/acepto recibir por whatsapp/i));
     fireEvent.click(screen.getByRole('button', { name: 'Solicitar reserva' }));
 
     expect(await screen.findByText('La franja ya está ocupada.')).toBeInTheDocument();
@@ -98,6 +111,7 @@ describe('AgendaCliente', () => {
   });
 
   it('calcula tarifa base y anticipo, habilita CTA y envía sin precio manual', async () => {
+    const abrirWhatsApp = vi.spyOn(window, 'open').mockReturnValue(null);
     render(<AgendaCliente canchas={[CANCHA]} ocupadas={[]} fechas={FECHAS} hoy="2026-11-12" canchaInicial={CANCHA.id} />);
 
     fireEvent.click(screen.getAllByRole('button', { name: /libre/i })[0]!);
@@ -109,6 +123,7 @@ describe('AgendaCliente', () => {
     fireEvent.change(screen.getByLabelText('WhatsApp'), { target: { value: '3001234567' } });
     fireEvent.change(screen.getByLabelText('Correo electrónico'), { target: { value: 'ana@example.com' } });
     fireEvent.click(screen.getByLabelText(/acepto el tratamiento/i));
+    fireEvent.click(screen.getByLabelText(/acepto recibir por whatsapp/i));
     const boton = screen.getByRole('button', { name: 'Solicitar reserva' });
     expect(boton).toBeEnabled();
     fireEvent.click(boton);
@@ -123,9 +138,20 @@ describe('AgendaCliente', () => {
         horaFin: '07:00',
         metodoAnticipo: 'transferencia',
         politicasAceptadas: true,
+        comprobanteWhatsappAceptado: true,
       }),
     })));
     expect(JSON.parse(fetchMock.mock.calls[0]?.[1]?.body as string)).not.toHaveProperty('valorTotal');
+    expect(await screen.findByText('Código de reserva: reserva-1')).toBeInTheDocument();
+    expect(screen.getByRole('link', { name: 'Abrir WhatsApp para enviar el comprobante' })).toHaveAttribute(
+      'href',
+      'https://wa.me/573001234567?text=reserva',
+    );
+    expect(abrirWhatsApp).toHaveBeenCalledWith(
+      'https://wa.me/573001234567?text=reserva',
+      '_blank',
+      'noopener,noreferrer',
+    );
     expect(await screen.findByRole('button', { name: /06:00 ocupada/i })).toBeDisabled();
     expect(screen.queryByRole('heading', { name: 'Tu reserva' })).not.toBeInTheDocument();
     await waitFor(() => expect(fetchMock).toHaveBeenCalledWith(

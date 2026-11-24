@@ -46,3 +46,9 @@
 - El README dirige a los usuarios a las URLs publicadas en Vercel.
 - El servidor local queda documentado como opción exclusiva de desarrollo; Vercel arranca la aplicación automáticamente.
 - `/` y `/reservas` se probaron en producción con respuesta HTTP 200 y sin errores de JavaScript.
+
+## Comprobante P27
+
+- Recibo incluye cancha, fecha, horario, código y reserva confirmada.
+- Envío mediante webhook HTTPS opcional; sin proveedor se ofrece envío inmediato vía `wa.me`.
+- El cliente otorga consentimiento específico y la reserva no se revierte por fallos de mensajería.

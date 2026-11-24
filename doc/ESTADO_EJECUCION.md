@@ -250,3 +250,10 @@
 - Se verificó que el código de la interfaz no contiene referencias a `localhost`; sus rutas internas son relativas al dominio abierto.
 - El README ahora presenta las URLs de producción como acceso principal y deja la ejecución local claramente como opcional para desarrollo.
 - La raíz y `/reservas` responden en producción sin depender de un proceso local.
+
+### P27 · Comprobante transaccional por WhatsApp · 2026-11-23
+
+- La reserva pública solicita consentimiento separado para enviar el comprobante y valida el celular/WhatsApp.
+- Tras persistir la reserva activa, genera el recibo con cancha, fecha, hora, código y confirmación; intenta entregarlo por API HTTPS con timeout de 2,5 segundos.
+- Si no hay endpoint o el proveedor no responde/acepta, la reserva permanece confirmada y se abre un enlace WhatsApp con el mensaje listo; queda también un enlace manual visible.
+- Variables opcionales: `RESERVAGOL_WHATSAPP_API_URL` y `RESERVAGOL_WHATSAPP_API_TOKEN`. No se cargaron credenciales externas.

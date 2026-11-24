@@ -3039,3 +3039,21 @@ body {
   background: rgba(255, 255, 255, 0.025) !important;
   color: #6b7280 !important;
 }
+
+.public-booking-confirmada {
+  border-color: rgba(16, 185, 129, 0.35);
+  border-radius: 1rem;
+  background: rgba(19, 28, 46, 0.92);
+  color: #f3f4f6;
+}
+
+.public-booking-confirmada strong {
+  width: 100%;
+  color: #6ee7b7;
+}
+
+.public-booking-confirmada a {
+  color: #34d399;
+  font-weight: 700;
+  text-underline-offset: 3px;
+}

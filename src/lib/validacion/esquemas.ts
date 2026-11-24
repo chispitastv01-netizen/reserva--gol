@@ -1,5 +1,6 @@
 import { z } from 'zod';
 import { esFechaValida, esHoraValida } from '@/lib/reglas/fechas';
+import { normalizarNumeroWhatsApp } from '@/lib/reglas/whatsapp';
 
 const esquemaFecha = z.string().refine(esFechaValida, 'Fecha inválida.');
 const esquemaHora = z.string().refine(esHoraValida, 'La hora debe tener formato HH:MM.');
@@ -59,7 +60,10 @@ export const esquemaReservaPublica = z.object({
   canchaId: z.string().uuid(),
   clienteNuevo: z.object({
     nombre: z.string().trim().min(1).max(120),
-    contacto: z.string().trim().min(1).max(120),
+    contacto: z.string().trim().min(1).max(120).refine(
+      (contacto) => normalizarNumeroWhatsApp(contacto) !== null,
+      'Ingresa un número de WhatsApp válido con código de país o un celular colombiano de 10 dígitos.',
+    ),
     email: z.string().trim().email().max(254),
   }),
   fecha: esquemaFecha,
@@ -67,6 +71,7 @@ export const esquemaReservaPublica = z.object({
   horaFin: esquemaHora,
   metodoAnticipo: z.enum(['transferencia', 'efectivo']),
   politicasAceptadas: z.literal(true),
+  comprobanteWhatsappAceptado: z.literal(true),
 }).refine(({ horaInicio, horaFin }) =>
   horaInicio.endsWith(':00') && horaFin.endsWith(':00'), {
   path: ['horaInicio'],
