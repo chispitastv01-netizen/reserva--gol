@@ -244,3 +244,9 @@
 - Se verificó que `/` y `/login` responden HTTP 200 en producción y se renderizan correctamente en navegador.
 - Se corrigieron cuatro pruebas de creación de reservas que fallaban al depender del reloj real y de una fecha de fixture ya pasada.
 - Next.js/Vercel conserva la detección nativa del framework, sin requerir scripts locales para iniciar producción.
+
+### P26 · Entrada de producción y enlaces públicos · 2026-11-23
+
+- Se verificó que el código de la interfaz no contiene referencias a `localhost`; sus rutas internas son relativas al dominio abierto.
+- El README ahora presenta las URLs de producción como acceso principal y deja la ejecución local claramente como opcional para desarrollo.
+- La raíz y `/reservas` responden en producción sin depender de un proceso local.

@@ -40,3 +40,9 @@
 
 - `/` y `/login` responden HTTP 200 en producción y muestran contenido en navegador.
 - Pruebas de creación de reserva usan un reloj fijo para evitar fallos según la fecha de ejecución.
+
+## Verificación P26
+
+- El README dirige a los usuarios a las URLs publicadas en Vercel.
+- El servidor local queda documentado como opción exclusiva de desarrollo; Vercel arranca la aplicación automáticamente.
+- `/` y `/reservas` se probaron en producción con respuesta HTTP 200 y sin errores de JavaScript.

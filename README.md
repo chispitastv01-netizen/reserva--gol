@@ -2,6 +2,16 @@
 
 Sistema de administración de reservas y cobros para canchas sintéticas. Usa Next.js App Router, TypeScript, PostgreSQL de Supabase y una interfaz protegida por sesión de administrador.
 
+## Aplicación publicada
+
+Usa siempre la aplicación alojada en Vercel; no requiere abrir una terminal, ejecutar comandos npm ni iniciar un servidor local:
+
+- Inicio: https://reservagolsm.vercel.app/
+- Reservas: https://reservagolsm.vercel.app/reservas
+- Acceso del propietario: https://reservagolsm.vercel.app/login
+
+La navegación dentro de la aplicación usa rutas relativas y conserva el dominio publicado.
+
 ## Funcionalidades
 
 - Gestión de canchas y clientes; se desactivan para conservar el historial.
@@ -12,13 +22,15 @@ Sistema de administración de reservas y cobros para canchas sintéticas. Usa Ne
 
 Las franjas son semiabiertas `[inicio, fin)`: 18:00–19:00 y 19:00–20:00 son consecutivas y no chocan.
 
-## Requisitos
+## Desarrollo local (opcional)
+
+Esta sección es únicamente para contribuir al código. No es necesaria para abrir ni usar la aplicación publicada.
 
 - Node.js 20.9 o posterior.
 - Proyecto Supabase Postgres.
 - Variables locales y de Vercel descritas abajo.
 
-## Configuración local
+### Configuración
 
 1. Instala dependencias con `npm install`.
 2. Copia `.env.example` a `.env.local` y asigna valores localmente; no subas `.env.local` a Git.
@@ -30,18 +42,19 @@ Las franjas son semiabiertas `[inicio, fin)`: 18:00–19:00 y 19:00–20:00 son 
 npm run db:migrar
 npm run db:verificar
 npm run db:demo
-npm run dev
 ```
 
 En Vercel configura los nombres de las variables de conexión y autenticación en los entornos que uses (Development, Preview y Production). No compartas ni registres sus valores.
+
+Para desarrollo visual local, `npm run dev` es opcional; al terminar, vuelve a usar las URLs de producción indicadas arriba.
 
 ## Scripts
 
 | Comando | Uso |
 |---|---|
-| `npm run dev` | Servidor local Next.js |
+| `npm run dev` | Servidor local Next.js, solo desarrollo opcional |
 | `npm run build` | Build de producción y verificación TypeScript |
-| `npm run start` | Servidor de producción local |
+| `npm run start` | Servidor de producción local; el alojamiento en Vercel lo inicia automáticamente |
 | `npm run test` | Pruebas Vitest |
 | `npm run db:migrar` | Aplicar migraciones SQL ordenadas |
 | `npm run db:verificar` | Verificar esquema, restricciones, RLS e integridad |
