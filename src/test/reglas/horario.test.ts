@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { esHoraValida } from '@/lib/reglas/fechas';
-import { finPosteriorAInicio, haySolape } from '@/lib/reglas/horario';
+import { calcularTotalReserva, duracionEnHoras, finPosteriorAInicio, haySolape } from '@/lib/reglas/horario';
 
 describe('reglas de horario', () => {
   it('T-01: detecta franjas idénticas', () => {
@@ -42,5 +42,18 @@ describe('reglas de horario', () => {
   it('T-23: rechaza horas fuera del rango válido', () => {
     expect(esHoraValida('25:00')).toBe(false);
     expect(esHoraValida('18:60')).toBe(false);
+  });
+
+  it('calcula duración y total para una reserva de dos horas', () => {
+    expect(duracionEnHoras('08:00', '10:00')).toBe(2);
+    expect(calcularTotalReserva(80000, '08:00', '10:00')).toBe(160000);
+  });
+
+  it('calcula duraciones parciales en pesos enteros y rechaza valores inválidos', () => {
+    expect(duracionEnHoras('08:30', '10:00')).toBe(1.5);
+    expect(calcularTotalReserva(50001, '08:30', '10:00')).toBe(75002);
+    expect(duracionEnHoras('10:00', '08:00')).toBe(0);
+    expect(calcularTotalReserva(80000, '08:00', '08:00')).toBe(0);
+    expect(calcularTotalReserva(Number.MAX_SAFE_INTEGER, '08:00', '10:00')).toBe(0);
   });
 });

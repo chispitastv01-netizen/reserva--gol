@@ -1,5 +1,6 @@
 'use client';
 
+import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { MapPin } from 'lucide-react';
@@ -9,7 +10,9 @@ import { Campo } from '@/components/ui/Campo';
 import { Selector } from '@/components/ui/Selector';
 import { EstadoVacio } from '@/components/ui/EstadoVacio';
 import { DIRECCION_SEDE, HORA_APERTURA, HORA_CIERRE, PRECIO_HORA_BASE } from '@/lib/config/reservagol';
-import { formatearFecha, formatearHora, formatearPesos } from '@/lib/formato';
+import { formatearDuracionHoras, formatearFecha, formatearHora, formatearPesos } from '@/lib/formato';
+import { calcularAnticipoInicial } from '@/lib/reglas/pago';
+import { calcularTotalReserva, duracionEnHoras, haySolape } from '@/lib/reglas/horario';
 import type { BloqueOcupadoPublico, Cancha } from '@/lib/datos/tipos';
 
 type Props = {
@@ -51,6 +54,15 @@ function horasDelDia() {
   return Array.from({ length: fin - inicio }, (_, indice) => `${String(inicio + indice).padStart(2, '0')}:00`);
 }
 
+function minutosDesdeMedianoche(hora: string) {
+  return Number(hora.slice(0, 2)) * 60 + Number(hora.slice(3, 5));
+}
+
+function horaConDuracion(horaInicio: string, duracion: number) {
+  const minutos = minutosDesdeMedianoche(horaInicio) + duracion * 60;
+  return `${String(Math.floor(minutos / 60)).padStart(2, '0')}:${String(minutos % 60).padStart(2, '0')}`;
+}
+
 function sumarDias(fecha: string, dias: number) {
   const resultado = new Date(`${fecha}T00:00:00Z`);
   resultado.setUTCDate(resultado.getUTCDate() + dias);
@@ -84,14 +96,37 @@ export function AgendaCliente({ canchas, ocupadas, fechas, hoy, canchaInicial }:
   const visibles = fechas.filter((fecha) => fecha >= hoy).slice(0, 7);
   const inicioRango = visibles[0] ?? hoy;
   const finRango = visibles[visibles.length - 1] ?? hoy;
+  const rangoActual = useRef({ desde: inicioRango, hasta: finRango });
   const horas = horasDelDia();
-  const duracionHoras = seleccion
-    ? (Number(seleccion.horaFin.slice(0, 2)) - Number(seleccion.horaInicio.slice(0, 2)))
-    : 0;
+  const duracionHoras = seleccion ? duracionEnHoras(seleccion.horaInicio, seleccion.horaFin) : 0;
   const tarifaPorHora = cancha?.precioHora ?? PRECIO_HORA_BASE;
-  const total = cancha && duracionHoras > 0 ? tarifaPorHora * duracionHoras : 0;
-  const anticipo = total > 0 ? Math.ceil(total * 0.25) : 0;
+  const total = seleccion && cancha
+    ? calcularTotalReserva(tarifaPorHora, seleccion.horaInicio, seleccion.horaFin)
+    : 0;
+  const anticipo = calcularAnticipoInicial(total);
+  const seleccionOcupada = Boolean(seleccion && bloquesOcupados.some((bloque) =>
+    bloque.canchaId === canchaId &&
+    bloque.fecha === seleccion.fecha &&
+    haySolape(seleccion.horaInicio, seleccion.horaFin, bloque.horaInicio, bloque.horaFin)
+  ));
+  const duracionesDisponibles = seleccion
+    ? Array.from(
+        { length: Math.floor((minutosDesdeMedianoche(HORA_CIERRE) - minutosDesdeMedianoche(seleccion.horaInicio)) / 60) },
+        (_, indice) => indice + 1,
+      ).filter((duracion) => {
+        const fin = horaConDuracion(seleccion.horaInicio, duracion);
+        return !bloquesOcupados.some((bloque) =>
+          bloque.canchaId === canchaId &&
+          bloque.fecha === seleccion.fecha &&
+          haySolape(seleccion.horaInicio, fin, bloque.horaInicio, bloque.horaFin)
+        );
+      })
+    : [];
   const puedeAnterior = inicioRango > hoy;
+
+  useEffect(() => {
+    rangoActual.current = { desde: inicioRango, hasta: finRango };
+  }, [finRango, inicioRango]);
 
   function seleccionarFranja(fecha: string, horaInicio: string, horaFin: string) {
     const ocupada = bloquesOcupados.some((bloque) =>
@@ -104,6 +139,15 @@ export function AgendaCliente({ canchas, ocupadas, fechas, hoy, canchaInicial }:
     setSeleccion({ fecha, horaInicio, horaFin });
     setConfirmacion(null);
     setCodigoCopiado(false);
+    setAviso(null);
+  }
+
+  function cambiarDuracion(duracion: number) {
+    if (!seleccion || !duracionesDisponibles.includes(duracion)) return;
+    setSeleccion({
+      ...seleccion,
+      horaFin: horaConDuracion(seleccion.horaInicio, duracion),
+    });
     setAviso(null);
   }
 
@@ -123,7 +167,7 @@ export function AgendaCliente({ canchas, ocupadas, fechas, hoy, canchaInicial }:
   }
 
   const actualizarDisponibilidad = useCallback(async (signal?: AbortSignal) => {
-    const parametros = new URLSearchParams({ desde: inicioRango, hasta: finRango });
+    const parametros = new URLSearchParams(rangoActual.current);
     try {
       const response = await fetch(`/api/reservas/publica?${parametros.toString()}`, {
         cache: 'no-store',
@@ -149,7 +193,7 @@ export function AgendaCliente({ canchas, ocupadas, fechas, hoy, canchaInicial }:
         setErrorDisponibilidad(true);
       }
     }
-  }, [finRango, inicioRango]);
+  }, []);
 
   useEffect(() => {
     const controller = new AbortController();
@@ -163,6 +207,10 @@ export function AgendaCliente({ canchas, ocupadas, fechas, hoy, canchaInicial }:
   }, [actualizarDisponibilidad]);
 
   async function confirmar() {
+    if (seleccionOcupada) {
+      setAviso({ tipo: 'error', texto: 'Ese rango acaba de ocuparse. Elige otro horario para continuar.' });
+      return;
+    }
     if (!cancha || !seleccion || !nombre.trim() || !contacto.trim() || !/^\S+@\S+\.\S+$/.test(email.trim()) || !aceptaPrivacidad || total <= 0) {
       setAviso({ tipo: 'error', texto: 'Completa tus datos, verifica la tarifa y acepta el tratamiento de datos.' });
       return;
@@ -236,6 +284,7 @@ export function AgendaCliente({ canchas, ocupadas, fechas, hoy, canchaInicial }:
         !Number.isSafeInteger(valorTotal) ||
         typeof anticipoRequerido !== 'number' ||
         !Number.isSafeInteger(anticipoRequerido) ||
+        anticipoRequerido !== calcularAnticipoInicial(valorTotal) ||
         typeof idReserva !== 'string' ||
         typeof canchaNombre !== 'string' ||
         estadoReserva !== 'activa' ||
@@ -291,9 +340,9 @@ export function AgendaCliente({ canchas, ocupadas, fechas, hoy, canchaInicial }:
           {canchas.map((item) => <option value={item.id} key={item.id}>{item.nombre}</option>)}
         </Selector>
         <div className="agenda-semana-navegacion">
-          {puedeAnterior ? <a className="agenda-semana-boton" href={`/reservas?canchaId=${canchaId}&fecha=${sumarDias(inicioRango, -7)}`}>← 7 días</a> : <span className="agenda-semana-boton agenda-semana-boton--desactivado">← 7 días</span>}
+          {puedeAnterior ? <Link className="agenda-semana-boton" href={`/reservas?canchaId=${canchaId}&fecha=${sumarDias(inicioRango, -7)}`}>← 7 días</Link> : <span className="agenda-semana-boton agenda-semana-boton--desactivado">← 7 días</span>}
           <p>{FECHA_RANGO.format(new Date(`${inicioRango}T12:00:00Z`))} al {FECHA_RANGO.format(new Date(`${finRango}T12:00:00Z`))}</p>
-          <a className="agenda-semana-boton" href={`/reservas?canchaId=${canchaId}&fecha=${sumarDias(inicioRango, 7)}`}>7 días →</a>
+          <Link className="agenda-semana-boton" href={`/reservas?canchaId=${canchaId}&fecha=${sumarDias(inicioRango, 7)}`}>7 días →</Link>
         </div>
       </section>
 
@@ -310,11 +359,16 @@ export function AgendaCliente({ canchas, ocupadas, fechas, hoy, canchaInicial }:
             <div><dt>Cancha</dt><dd>{confirmacion.canchaNombre}</dd></div>
             <div><dt>Fecha</dt><dd>{formatearFecha(confirmacion.fecha)}</dd></div>
             <div><dt>Horario</dt><dd>{formatearHora(confirmacion.horaInicio)}–{formatearHora(confirmacion.horaFin)}</dd></div>
+            <div><dt>Duración</dt><dd>{formatearDuracionHoras(duracionEnHoras(confirmacion.horaInicio, confirmacion.horaFin))}</dd></div>
+          </dl>
+          <dl className="comprobante-valores">
+            <div><dt>Total</dt><dd>{formatearPesos(confirmacion.total)}</dd></div>
+            <div><dt>Anticipo requerido (25%)</dt><dd>{formatearPesos(confirmacion.anticipo)}</dd></div>
           </dl>
           <div className="comprobante-codigo">
             <div><span>Código de reserva</span><code>{confirmacion.id}</code></div>
             <Boton variante="secundario" className="comprobante-copiar" type="button" onClick={copiarCodigoReserva}>
-              {codigoCopiado ? 'Código copiado' : 'Copiar código'}
+              {codigoCopiado ? 'Copiado' : 'Copiar código'}
             </Boton>
           </div>
           <details className="comprobante-detalles">
@@ -323,10 +377,11 @@ export function AgendaCliente({ canchas, ocupadas, fechas, hoy, canchaInicial }:
               <div><dt>Cancha</dt><dd>{confirmacion.canchaNombre}</dd></div>
               <div><dt>Fecha</dt><dd>{formatearFecha(confirmacion.fecha)}</dd></div>
               <div><dt>Horario</dt><dd>{formatearHora(confirmacion.horaInicio)}–{formatearHora(confirmacion.horaFin)}</dd></div>
+              <div><dt>Duración</dt><dd>{formatearDuracionHoras(duracionEnHoras(confirmacion.horaInicio, confirmacion.horaFin))}</dd></div>
               <div><dt>Estado de la reserva</dt><dd>Activa</dd></div>
               <div><dt>Estado del pago</dt><dd>Pendiente</dd></div>
               <div><dt>Total</dt><dd>{formatearPesos(confirmacion.total)}</dd></div>
-              <div><dt>Anticipo inicial (25%)</dt><dd>{formatearPesos(confirmacion.anticipo)}</dd></div>
+              <div><dt>Anticipo requerido (25%)</dt><dd>{formatearPesos(confirmacion.anticipo)}</dd></div>
             </dl>
           </details>
         </section>
@@ -355,11 +410,11 @@ export function AgendaCliente({ canchas, ocupadas, fechas, hoy, canchaInicial }:
             <table className="agenda-matriz-tabla">
               <thead><tr><th className="agenda-columna-hora" scope="col">Hora</th>{visibles.map((fecha) => <th className="agenda-dia" scope="col" key={fecha}>{etiquetaDia(fecha)}{fecha === hoy && <span className="agenda-hoy">Hoy</span>}</th>)}</tr></thead>
               <tbody>{horas.map((horaInicio) => {
-                const horaFin = `${String(Number(horaInicio.slice(0, 2)) + 1).padStart(2, '0')}:00`;
+                const horaFin = horaConDuracion(horaInicio, 1);
                 return <tr key={horaInicio}><th className="agenda-hora" scope="row">{formatearHora(horaInicio)}</th>{visibles.map((fecha) => {
                   const ocupada = bloquesOcupados.some((bloque) => bloque.canchaId === canchaId && bloque.fecha === fecha && bloque.horaInicio < horaFin && horaInicio < bloque.horaFin);
-                  const activa = seleccion?.fecha === fecha && seleccion.horaInicio === horaInicio;
-                  return <td key={fecha}><button className={`agenda-celda ${ocupada ? 'agenda-celda--ocupada' : 'agenda-celda--libre'}${activa ? ' agenda-celda--seleccionada' : ''}`} type="button" disabled={ocupada || fecha < hoy || !cancha} aria-label={`${etiquetaDia(fecha)} ${formatearHora(horaInicio)} ${ocupada ? 'ocupada' : 'libre'}`} onClick={() => seleccionarFranja(fecha, horaInicio, horaFin)}><span className={`agenda-badge ${ocupada ? 'agenda-badge--ocupada' : 'agenda-badge--libre'}`}>{ocupada ? 'Ocupada' : 'Libre'}</span></button></td>;
+                  const seleccionada = seleccion?.fecha === fecha && horaInicio >= seleccion.horaInicio && horaInicio < seleccion.horaFin;
+                  return <td key={fecha}><button className={`agenda-celda ${ocupada ? 'agenda-celda--ocupada' : 'agenda-celda--libre'}${seleccionada ? ' agenda-celda--seleccionada' : ''}`} type="button" disabled={ocupada || fecha < hoy || !cancha} aria-pressed={seleccionada} aria-label={`${etiquetaDia(fecha)} ${formatearHora(horaInicio)} ${ocupada ? 'ocupada' : seleccionada ? 'seleccionada' : 'libre'}`} onClick={() => seleccionarFranja(fecha, horaInicio, horaFin)}><span className={`agenda-badge ${ocupada ? 'agenda-badge--ocupada' : seleccionada ? 'agenda-badge--seleccionada' : 'agenda-badge--libre'}`}>{ocupada ? 'Ocupada' : seleccionada ? 'Seleccionada' : 'Libre'}</span></button></td>;
                 })}</tr>;
               })}</tbody>
             </table>
@@ -370,15 +425,25 @@ export function AgendaCliente({ canchas, ocupadas, fechas, hoy, canchaInicial }:
           <p className="seccion-kicker">Paso 2 · Confirma tus datos</p>
           <h2 id="tu-reserva-publica">Tu reserva</h2>
           <dl className="agenda-reserva-datos"><div><dt>Cancha</dt><dd>{cancha.nombre}</dd></div><div><dt>Fecha</dt><dd>{formatearFecha(seleccion.fecha)}</dd></div><div><dt>Horario</dt><dd>{formatearHora(seleccion.horaInicio)}–{formatearHora(seleccion.horaFin)}</dd></div></dl>
+          <Selector etiqueta="Duración" value={String(duracionHoras)} onChange={(event) => cambiarDuracion(Number(event.target.value))} disabled={duracionesDisponibles.length === 0}>
+            {duracionesDisponibles.length === 0
+              ? <option value={String(duracionHoras)}>Horario ya ocupado</option>
+              : duracionesDisponibles.map((duracion) => (
+                  <option value={duracion} key={duracion}>
+                    {formatearDuracionHoras(duracion)} · {formatearHora(seleccion.horaInicio)}–{formatearHora(horaConDuracion(seleccion.horaInicio, duracion))}
+                  </option>
+                ))}
+          </Selector>
           <div className="agenda-datos-cliente">
             <Campo etiqueta="Nombre completo" autoComplete="name" value={nombre} onChange={(event) => setNombre(event.target.value)} required />
             <Campo etiqueta="Teléfono de contacto" type="tel" autoComplete="tel" value={contacto} onChange={(event) => setContacto(event.target.value)} required />
             <Campo etiqueta="Correo electrónico" type="email" autoComplete="email" value={email} onChange={(event) => setEmail(event.target.value)} required />
           </div>
           <Selector etiqueta="Método de anticipo" value={metodoAnticipo} onChange={(event) => setMetodoAnticipo(event.target.value as MetodoAnticipo)}><option value="transferencia">Transferencia</option><option value="efectivo">Pago en sede</option></Selector>
-          <div className="agenda-total"><div><span>Total · {duracionHoras} h × {formatearPesos(tarifaPorHora).replace(/ COP$/, '')}/h COP{cancha?.precioHora == null ? ' (tarifa base)' : ''}</span><strong>{total ? formatearPesos(total) : 'No disponible'}</strong></div><div className="agenda-anticipo"><span>Anticipo (25%)</span><strong>{anticipo ? formatearPesos(anticipo) : 'No disponible'}</strong></div></div>
+          <div className="agenda-total"><div><span>Duración</span><strong>{duracionHoras ? formatearDuracionHoras(duracionHoras) : 'No disponible'}</strong></div><div><span>Total · {formatearPesos(tarifaPorHora)}/h{cancha.precioHora == null ? ' (tarifa base)' : ''}</span><strong>{total ? formatearPesos(total) : 'No disponible'}</strong></div><div className="agenda-anticipo"><span>Anticipo requerido (25%)</span><strong>{anticipo ? formatearPesos(anticipo) : 'No disponible'}</strong></div></div>
+          {seleccionOcupada && <Aviso tono="error" role="status">Ese rango acaba de ocuparse. Elige otro horario para continuar.</Aviso>}
           <label className="agenda-privacidad"><input type="checkbox" checked={aceptaPrivacidad} onChange={(event) => setAceptaPrivacidad(event.target.checked)} /><span>Acepto el tratamiento de mis datos personales para gestionar esta reserva.</span></label>
-          <Boton type="button" className="agenda-confirmar" onClick={confirmar} disabled={guardando || !total || !nombre.trim() || !contacto.trim() || !email.trim() || !aceptaPrivacidad}>{guardando ? 'Confirmando reserva...' : 'Solicitar reserva'}</Boton>
+          <Boton type="button" className="agenda-confirmar" onClick={confirmar} disabled={guardando || seleccionOcupada || !duracionesDisponibles.includes(duracionHoras) || !total || !nombre.trim() || !contacto.trim() || !email.trim() || !aceptaPrivacidad}>{guardando ? 'Confirmando reserva...' : 'Solicitar reserva'}</Boton>
           {aviso && <Aviso tono={aviso.tipo} role="status">{aviso.texto}</Aviso>}
         </aside>}
       </div>

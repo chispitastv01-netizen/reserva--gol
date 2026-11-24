@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { abonoValido, estadoPago, saldo } from '@/lib/reglas/pago';
+import { abonoValido, calcularAnticipoInicial, estadoPago, saldo } from '@/lib/reglas/pago';
 
 describe('reglas de pago', () => {
   it('T-10: deja pendiente un pago sin abonos', () => {
@@ -36,5 +36,11 @@ describe('reglas de pago', () => {
 
   it('T-18: rechaza un abono de cero', () => {
     expect(abonoValido(50000, 0, 0)).toBe(false);
+  });
+
+  it('calcula un anticipo inicial del 25% como pesos enteros', () => {
+    expect(calcularAnticipoInicial(120000)).toBe(30000);
+    expect(calcularAnticipoInicial(50001)).toBe(12501);
+    expect(calcularAnticipoInicial(0)).toBe(0);
   });
 });

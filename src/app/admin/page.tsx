@@ -1,4 +1,5 @@
 import Link from 'next/link';
+import { AccionesReservaAdmin } from '@/components/reservagol/AccionesReservaAdmin';
 import { ActualizarDatosEnVivo } from '@/components/reservagol/ActualizarDatosEnVivo';
 import { InsigniaEstadoPago } from '@/components/reservagol/InsigniaEstadoPago';
 import { resumenAdministrador } from '@/lib/dataService';
@@ -53,6 +54,13 @@ export default async function AdminPage({ searchParams }: Props) {
         <article className="admin-metrica"><span>Canchas ocupadas</span><strong>{resumen.canchasOcupadas}</strong><small>Con reservas activas en el período</small></article>
       </section>
 
+      <nav className="admin-accesos" aria-label="Acciones rápidas">
+        <Link href="/reservas/nueva">Nueva reserva</Link>
+        <Link href="/reservas/clientes">Clientes</Link>
+        <Link href="/reservas/resumen">Resumen</Link>
+        <Link href="/reservas/canchas">Canchas</Link>
+      </nav>
+
       <section className="admin-tabla-seccion" aria-labelledby="admin-canchas-titulo">
         <div className="seccion-cabecera">
           <div><p className="seccion-kicker">Rendimiento</p><h2 id="admin-canchas-titulo">Actividad por cancha</h2></div>
@@ -101,6 +109,7 @@ export default async function AdminPage({ searchParams }: Props) {
                 <th>Abonado</th>
                 <th>Pago</th>
                 <th>Reserva</th>
+                <th>Acciones</th>
               </tr>
             </thead>
             <tbody>
@@ -117,21 +126,26 @@ export default async function AdminPage({ searchParams }: Props) {
                   <td className="monto-tabular">{formatearPesos(reserva.abonado)}</td>
                   <td><InsigniaEstadoPago estado={reserva.estadoPago} /></td>
                   <td>{reserva.estado === 'activa' ? 'Activa' : 'Cancelada'}</td>
+                  <td>
+                    <AccionesReservaAdmin
+                      id={reserva.id}
+                      clienteNombre={reserva.clienteNombre}
+                      fecha={reserva.fecha}
+                      horaInicio={reserva.horaInicio}
+                      horaFin={reserva.horaFin}
+                      estado={reserva.estado}
+                    />
+                  </td>
                 </tr>
               ))}
               {resumen.reservas.length === 0 && (
-                <tr><td colSpan={11}>No hay reservas registradas.</td></tr>
+                <tr><td colSpan={12}>No hay reservas registradas.</td></tr>
               )}
             </tbody>
           </table>
         </div>
       </section>
 
-      <nav className="admin-accesos" aria-label="Herramientas del propietario">
-        <Link href="/reservas/canchas">Administrar canchas</Link>
-        <Link href="/reservas/clientes">Administrar clientes</Link>
-        <Link href="/reservas/resumen">Resumen detallado</Link>
-      </nav>
     </main>
   );
 }

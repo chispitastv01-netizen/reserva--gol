@@ -7,7 +7,10 @@ import { Aviso } from '@/components/ui/Aviso';
 import { Boton } from '@/components/ui/Boton';
 import { Campo } from '@/components/ui/Campo';
 import { Selector } from '@/components/ui/Selector';
-import { formatearHora } from '@/lib/formato';
+import { formatearDuracionHoras, formatearHora, formatearPesos } from '@/lib/formato';
+import { PRECIO_HORA_BASE } from '@/lib/config/reservagol';
+import { calcularAnticipoInicial } from '@/lib/reglas/pago';
+import { calcularTotalReserva, duracionEnHoras } from '@/lib/reglas/horario';
 import { esFechaPasada, esFechaValida, esHoraValida } from '@/lib/reglas/fechas';
 import type { Cancha, Cliente } from '@/lib/datos/tipos';
 
@@ -38,10 +41,14 @@ export function FormularioReserva({
   const [fecha, setFecha] = useState(fechaInicial);
   const [horaInicio, setHoraInicio] = useState('18:00');
   const [horaFin, setHoraFin] = useState('19:00');
-  const [valorTotal, setValorTotal] = useState('50000');
   const [aviso, setAviso] = useState<{ tipo: 'exito' | 'error'; texto: string } | null>(null);
   const [guardando, setGuardando] = useState(false);
 
+  const cancha = canchas.find((item) => item.id === canchaId);
+  const precioHora = cancha?.precioHora ?? PRECIO_HORA_BASE;
+  const duracionHoras = duracionEnHoras(horaInicio, horaFin);
+  const valorTotal = calcularTotalReserva(precioHora, horaInicio, horaFin);
+  const anticipoInicial = calcularAnticipoInicial(valorTotal);
   const errorFecha = !fecha || !esFechaValida(fecha)
     ? 'Ingresa una fecha válida.'
     : esFechaPasada(fecha, hoy)
@@ -53,14 +60,11 @@ export function FormularioReserva({
     : esHoraValida(horaInicio) && horaFin <= horaInicio
       ? 'La hora de fin debe ser posterior al inicio.'
       : undefined;
-  const errorValor = !Number.isInteger(Number(valorTotal)) || Number(valorTotal) <= 0
-    ? 'El valor debe ser un entero mayor que cero.'
-    : undefined;
 
   async function guardar(evento: FormEvent<HTMLFormElement>) {
     evento.preventDefault();
     setAviso(null);
-    if (errorFecha || errorHoraInicio || errorHoraFin || errorValor || !canchaId || !clienteId) {
+    if (errorFecha || errorHoraInicio || errorHoraFin || valorTotal <= 0 || !canchaId || !clienteId) {
       setAviso({ tipo: 'error', texto: 'Revisa los datos marcados antes de guardar.' });
       return;
     }
@@ -76,7 +80,7 @@ export function FormularioReserva({
           fecha,
           horaInicio,
           horaFin,
-          valorTotal: Number(valorTotal),
+          valorTotal,
         }),
       });
       const resultado = await respuesta.json();
@@ -123,7 +127,12 @@ export function FormularioReserva({
         <Campo etiqueta="Fecha" type="date" min={hoy} value={fecha} onChange={(evento) => setFecha(evento.target.value)} error={errorFecha} required />
         <Campo etiqueta="Hora de inicio" type="time" value={horaInicio} onChange={(evento) => setHoraInicio(evento.target.value)} error={errorHoraInicio} required />
         <Campo etiqueta="Hora de fin" type="time" value={horaFin} onChange={(evento) => setHoraFin(evento.target.value)} error={errorHoraFin} required />
-        <Campo etiqueta="Valor total (COP)" type="number" min="1" step="1" inputMode="numeric" value={valorTotal} onChange={(evento) => setValorTotal(evento.target.value)} error={errorValor} required />
+        <dl className="formulario-reserva-resumen" aria-label="Cálculo de la reserva">
+          <div><dt>Duración</dt><dd>{duracionHoras ? formatearDuracionHoras(duracionHoras) : 'Revisa el horario'}</dd></div>
+          <div><dt>Tarifa por hora</dt><dd>{formatearPesos(precioHora)}</dd></div>
+          <div><dt>Total calculado</dt><dd>{valorTotal ? formatearPesos(valorTotal) : 'No disponible'}</dd></div>
+          <div><dt>Anticipo inicial de referencia (25%)</dt><dd>{anticipoInicial ? formatearPesos(anticipoInicial) : 'No disponible'}</dd></div>
+        </dl>
         <div className="formulario-reserva-acciones">
           <Link className="boton boton--secundario" href={`/reservas?canchaId=${encodeURIComponent(canchaId)}&fecha=${encodeURIComponent(fecha)}`}>
             Volver a agenda

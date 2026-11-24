@@ -269,3 +269,12 @@
 - Se renovaron las tarjetas de canchas, los estados de ocupación y las transiciones respetando `prefers-reduced-motion`.
 - La limpieza selectiva `db:limpiar -- --prueba` queda documentada; no se borraron datos de una base real durante este cambio.
 - Validación: `npm.cmd test` (84 pruebas) y `npm.cmd run build` completados sin errores.
+
+### P30 · Coherencia de reservas y cobros · 2026-11-23
+
+- La duración, total y anticipo requerido se calculan con reglas compartidas para el formulario administrativo, la agenda pública, el comprobante y el detalle de cobro.
+- La agenda pública permite seleccionar horas consecutivas disponibles, valida de nuevo los solapamientos y conserva la ocupación inmediata después de confirmar. El botón de copia muestra “Copiado”.
+- Administración ofrece accesos rápidos, enlaces a cobro/detalle y cancelación confirmada de reservas activas; no se permite borrar reservas ni se modifican registros reales.
+- Clientes enlaza cada reserva con su detalle de cobro; el formulario administrativo distingue el anticipo inicial de referencia de los abonos realmente recibidos.
+- Se reemplazó el enlace placeholder de recuperación de contraseña por una indicación de contacto con administración y se ajustó el detalle para evitar construir JSX dentro de `try/catch`.
+- Validación final: `npm.cmd test` (95 pruebas), `npm.cmd run build`, ESLint con las configuraciones flat de Next.js 16 (0 errores y 0 advertencias) y `git diff --check`, todo correcto.

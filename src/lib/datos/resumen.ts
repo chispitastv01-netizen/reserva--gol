@@ -1,7 +1,7 @@
 import { consultar } from '@/lib/db/conexion';
 import { listarCanchas } from './canchas';
 import { listarReservas } from './reservas';
-import { estadoPago, saldo } from '@/lib/reglas/pago';
+import { calcularAnticipoInicial, estadoPago, saldo } from '@/lib/reglas/pago';
 import type {
   AgendaDia,
   ResumenAdministrador,
@@ -160,7 +160,7 @@ export async function resumenAdministrador(
       return {
         ...reserva,
         valorTotal,
-        anticipoRequerido: reserva.anticipoRequerido ? Math.ceil(valorTotal * 0.25) : null,
+        anticipoRequerido: reserva.anticipoRequerido ? calcularAnticipoInicial(valorTotal) : null,
         abonado,
         saldo: saldo(valorTotal, abonado),
         estadoPago: estadoPago(valorTotal, abonado),

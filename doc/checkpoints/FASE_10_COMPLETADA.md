@@ -65,3 +65,11 @@
 - Las tarjetas de cancha y los estados de disponibilidad usan transiciones sutiles con soporte para movimiento reducido.
 - La limpieza dirigida a registros "Prueba" está disponible con `npm run db:limpiar -- --prueba`; no se ejecutó sobre la base configurada.
 - Validación de esta iteración: 84 pruebas pasan y el build de producción termina correctamente.
+
+## Coherencia de reservas y cobros P30
+
+- Se unificaron los cálculos de duración, total y anticipo requerido; ahora el cliente puede seleccionar varias horas consecutivas libres y ve los mismos importes en el formulario, el comprobante y el detalle.
+- El estado de ocupación se actualiza al confirmar y no se revierte ante respuestas de disponibilidad antiguas. La copia del código confirma con “Copiado”.
+- El panel ofrece accesos a Clientes, Resumen y Canchas, gestión de cobro desde reservas y cancelación con confirmación; las reservas permanecen en historial y no se borran.
+- Clientes ofrece acceso a cada detalle de cobro. El anticipo administrativo se presenta como referencia y no como dinero abonado.
+- Validación final: `npm.cmd test` (95 pruebas), `npm.cmd run build`, ESLint flat de Next.js 16 (0 errores/advertencias) y `git diff --check`, todo correcto.

@@ -1,5 +1,10 @@
 export type EstadoPago = 'pendiente' | 'anticipo' | 'pagado';
 
+export function calcularAnticipoInicial(total: number): number {
+  if (!Number.isSafeInteger(total) || total <= 0) return 0;
+  return Math.ceil(total / 4);
+}
+
 export function estadoPago(total: number, abonado: number): EstadoPago {
   if (abonado <= 0) return 'pendiente';
   if (abonado >= total) return 'pagado';

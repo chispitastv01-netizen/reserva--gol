@@ -3,7 +3,7 @@ import { conTransaccion, consultar } from '@/lib/db/conexion';
 import { LIMITE_LISTADO, PRECIO_HORA_BASE } from '@/lib/config/reservagol';
 import { ErrorDeNegocio } from '@/lib/reglas/errores';
 import { hoyBogota } from '@/lib/reglas/fechas';
-import { haySolape } from '@/lib/reglas/horario';
+import { calcularTotalReserva, haySolape } from '@/lib/reglas/horario';
 import { abonoValido, estadoPago, saldo } from '@/lib/reglas/pago';
 import { validarReserva } from '@/lib/reglas/reserva';
 import { esquemaFiltrosReservas } from '@/lib/validacion/esquemas';
@@ -174,12 +174,8 @@ export async function crearReservaPublica(
       const precioHora = cancha.precioHora ?? PRECIO_HORA_BASE;
       if (!Number.isInteger(precioHora) || precioHora <= 0) throw new ErrorDeNegocio('DATOS_INVALIDOS');
 
-      const duracionMinutos =
-        (Number(datos.horaFin.slice(0, 2)) - Number(datos.horaInicio.slice(0, 2))) * 60;
-      if (duracionMinutos <= 0 || duracionMinutos % 60 !== 0) {
-        throw new ErrorDeNegocio('DATOS_INVALIDOS');
-      }
-      const valorTotal = (precioHora * duracionMinutos) / 60;
+      const valorTotal = calcularTotalReserva(precioHora, datos.horaInicio, datos.horaFin);
+      if (valorTotal <= 0) throw new ErrorDeNegocio('DATOS_INVALIDOS');
       validarReserva({ ...datos, valorTotal }, hoyBogota());
 
       const activas = await tx.query<Franja>(

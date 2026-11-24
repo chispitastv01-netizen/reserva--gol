@@ -3,7 +3,7 @@ import { consultar } from '@/lib/db/conexion';
 import { LIMITE_LISTADO } from '@/lib/config/reservagol';
 import { ErrorDeNegocio } from '@/lib/reglas/errores';
 import { validarCliente } from '@/lib/reglas/cliente';
-import { estadoPago, saldo } from '@/lib/reglas/pago';
+import { calcularAnticipoInicial, estadoPago, saldo } from '@/lib/reglas/pago';
 import { esquemaCliente } from '@/lib/validacion/esquemas';
 import type { Cliente, ClienteConReservas, DatosCliente, EstadoReserva } from './tipos';
 
@@ -105,7 +105,7 @@ export async function listarClientesConReservas(
       horaInicio: fila.horaInicio,
       horaFin: fila.horaFin,
       valorTotal,
-      anticipoRequerido: fila.anticipoRequerido ? Math.ceil(valorTotal * 0.25) : null,
+      anticipoRequerido: fila.anticipoRequerido ? calcularAnticipoInicial(valorTotal) : null,
       abonado,
       saldo: saldo(valorTotal, abonado),
       estado: fila.estado,

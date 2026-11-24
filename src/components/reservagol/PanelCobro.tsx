@@ -8,7 +8,9 @@ import { Campo } from '@/components/ui/Campo';
 import { Modal } from '@/components/ui/Modal';
 import { InsigniaEstadoPago } from '@/components/reservagol/InsigniaEstadoPago';
 import { InsigniaEstadoReserva } from '@/components/reservagol/InsigniaEstadoReserva';
-import { formatearFecha, formatearHora, formatearPesos } from '@/lib/formato';
+import { formatearDuracionHoras, formatearFecha, formatearHora, formatearPesos } from '@/lib/formato';
+import { calcularAnticipoInicial } from '@/lib/reglas/pago';
+import { duracionEnHoras } from '@/lib/reglas/horario';
 import type { ReservaConCobro } from '@/lib/datos/tipos';
 
 type PanelCobroProps = {
@@ -70,6 +72,8 @@ export function PanelCobro({ reserva }: PanelCobroProps) {
   }
 
   const textoConfirmacion = `Cancelar la reserva de ${reserva.clienteNombre} el ${formatearFecha(reserva.fecha)} de ${formatearHora(reserva.horaInicio)} a ${formatearHora(reserva.horaFin)}. El horario quedará libre.`;
+  const duracionHoras = duracionEnHoras(reserva.horaInicio, reserva.horaFin);
+  const anticipoInicial = calcularAnticipoInicial(reserva.cobro.total);
 
   return (
     <div className="detalle-reserva">
@@ -96,7 +100,12 @@ export function PanelCobro({ reserva }: PanelCobroProps) {
           <InsigniaEstadoPago estado={reserva.cobro.estadoPago} />
         </div>
         <dl className="cobro-resumen">
+          <div><dt>Duración</dt><dd>{formatearDuracionHoras(duracionHoras)}</dd></div>
           <div><dt>Total</dt><dd>{formatearPesos(reserva.cobro.total)}</dd></div>
+          <div>
+            <dt>{reserva.metodoAnticipo ? 'Anticipo inicial acordado (25%)' : 'Anticipo inicial de referencia (25%)'}</dt>
+            <dd>{formatearPesos(anticipoInicial)}</dd>
+          </div>
           <div><dt>Abonado</dt><dd>{formatearPesos(reserva.cobro.abonado)}</dd></div>
           <div><dt>Saldo</dt><dd>{formatearPesos(reserva.cobro.saldo)}</dd></div>
         </dl>

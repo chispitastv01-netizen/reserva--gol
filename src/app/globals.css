@@ -206,14 +206,10 @@ body {
   margin-top: -0.45rem;
 }
 
-.login-forgot-row a {
+.login-forgot-row span {
   color: var(--green);
   font-size: 0.88rem;
-  text-decoration: none;
-}
-
-.login-forgot-row a:hover {
-  text-decoration: underline;
+  text-align: right;
 }
 
 .login-auth-error {
@@ -868,6 +864,40 @@ body {
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
   gap: 1.15rem;
+}
+
+.formulario-reserva-resumen {
+  display: grid;
+  grid-column: 1 / -1;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 0.85rem;
+  margin: 0;
+  padding: 1rem;
+  border: 1px solid var(--line);
+  border-radius: 0.8rem;
+  background: rgba(9, 13, 22, 0.45);
+}
+
+.formulario-reserva-resumen > div {
+  display: grid;
+  gap: 0.3rem;
+}
+
+.formulario-reserva-resumen dt {
+  color: var(--muted);
+  font-size: 0.75rem;
+}
+
+.formulario-reserva-resumen dd {
+  margin: 0;
+  color: var(--text);
+  font-size: 0.92rem;
+  font-weight: 750;
+  font-variant-numeric: tabular-nums;
+}
+
+.formulario-reserva-resumen > div:nth-child(n + 3) dd {
+  color: #6ee7b7;
 }
 
 .formulario-reserva-acciones {
@@ -2150,6 +2180,33 @@ body {
   color: #047857;
 }
 
+.admin-reserva-acciones {
+  display: flex;
+  min-width: 13rem;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.admin-accion-cobro {
+  display: inline-flex;
+  min-height: 2.5rem;
+  align-items: center;
+  padding: 0.55rem 0.75rem;
+  border: 1px solid var(--line);
+  border-radius: 0.55rem;
+  color: var(--text);
+  font-size: 0.78rem;
+  font-weight: 700;
+  text-decoration: none;
+}
+
+.admin-accion-cobro:hover {
+  border-color: rgba(52, 211, 153, 0.5);
+  background: rgba(16, 185, 129, 0.12);
+  color: #6ee7b7;
+}
+
 @media (max-width: 760px) {
   .public-booking-filtros,
   .admin-cabecera {
@@ -3232,7 +3289,9 @@ body {
 
 .admin-metrica,
 .admin-tabla-seccion,
-.admin-accesos a {
+.admin-accesos a,
+.admin-accion-cobro,
+.app-link {
   transition: border-color 180ms ease, box-shadow 180ms ease, transform 180ms ease;
 }
 
@@ -3303,6 +3362,71 @@ body {
   transition: background-color 180ms ease, border-color 180ms ease, color 180ms ease, box-shadow 180ms ease;
 }
 
+.app-link {
+  transition: background-color 180ms ease, border-color 180ms ease, color 180ms ease;
+}
+
+.admin-accesos a {
+  border-color: var(--line);
+  background: rgba(19, 28, 46, 0.92);
+  color: var(--text);
+}
+
+.admin-accesos a:hover {
+  transform: translateY(-1px);
+  border-color: rgba(52, 211, 153, 0.5);
+  background: rgba(16, 185, 129, 0.12);
+  color: #6ee7b7;
+}
+
+.admin-accion-cobro:focus-visible,
+.admin-accesos a:focus-visible {
+  outline: 2px solid #6ee7b7;
+  outline-offset: 2px;
+}
+
+.comprobante-resumen {
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+}
+
+.comprobante-valores {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 0.7rem;
+  margin: 0;
+  padding: 0.85rem;
+  border: 1px solid var(--line);
+  border-radius: 0.8rem;
+  background: rgba(9, 13, 22, 0.45);
+}
+
+.comprobante-valores > div {
+  display: grid;
+  gap: 0.25rem;
+}
+
+.comprobante-valores dt {
+  color: var(--muted);
+  font-size: 0.75rem;
+}
+
+.comprobante-valores dd {
+  margin: 0;
+  color: #6ee7b7;
+  font-size: 0.95rem;
+  font-weight: 750;
+  font-variant-numeric: tabular-nums;
+}
+
+.agenda-total > div:first-child strong {
+  color: var(--text);
+  font-size: 0.95rem;
+}
+
+.agenda-total > div:nth-child(2) strong {
+  font-size: 1.05rem;
+}
+
 .agenda-matriz-tabla .agenda-celda--ocupada {
   border-color: rgba(239, 68, 68, 0.42);
   background: linear-gradient(135deg, rgba(239, 68, 68, 0.2), rgba(127, 29, 29, 0.22));
@@ -3344,11 +3468,19 @@ body {
   .resumen-cifras {
     grid-template-columns: repeat(2, minmax(0, 1fr));
   }
+
+  .formulario-reserva-resumen {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
 }
 
 @media (max-width: 520px) {
   .comprobante-resumen,
   .comprobante-detalles dl {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .comprobante-valores {
     grid-template-columns: minmax(0, 1fr);
   }
 

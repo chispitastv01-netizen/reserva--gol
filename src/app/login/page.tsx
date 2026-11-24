@@ -1,7 +1,8 @@
 'use client';
 
-import { FormEvent, useState } from 'react';
+import { useState, type FormEvent } from 'react';
 import { useRouter } from 'next/navigation';
+import Link from 'next/link';
 import { Trophy } from 'lucide-react';
 
 type FieldErrors = {
@@ -58,10 +59,10 @@ export default function LoginPage() {
   return (
     <main className="page-shell login-shell">
       <section className="login-panel backdrop-blur-md" aria-labelledby="login-title">
-        <a className="login-brand" href="/" aria-label="ReservaGol, inicio">
+        <Link className="login-brand" href="/" aria-label="ReservaGol, inicio">
           <span className="login-brand-mark" aria-hidden="true"><Trophy size={18} /></span>
           <span>ReservaGol</span>
-        </a>
+        </Link>
 
         <div className="login-heading">
           <span className="login-eyebrow">Tu próximo partido empieza aquí</span>
@@ -103,7 +104,7 @@ export default function LoginPage() {
           </div>
 
           <div className="login-forgot-row">
-            <a href="#" onClick={(event) => event.preventDefault()}>Olvidé mi contraseña</a>
+            <span>Solicita tus credenciales al administrador.</span>
           </div>
 
           {authError && <p className="login-auth-error" role="alert">{authError}</p>}

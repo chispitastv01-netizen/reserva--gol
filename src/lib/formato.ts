@@ -23,3 +23,8 @@ export function formatearFecha(fecha: string): string {
 export function formatearHora(hora: string): string {
   return hora.slice(0, 5);
 }
+
+export function formatearDuracionHoras(duracion: number): string {
+  const horas = new Intl.NumberFormat('es-CO', { maximumFractionDigits: 2 }).format(duracion);
+  return `${horas} ${duracion === 1 ? 'hora' : 'horas'}`;
+}

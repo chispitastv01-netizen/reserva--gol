@@ -1,3 +1,4 @@
+import Link from 'next/link';
 import { AccionDesactivar } from '@/components/reservagol/AccionDesactivar';
 import { ActualizarDatosEnVivo } from '@/components/reservagol/ActualizarDatosEnVivo';
 import { FormularioCliente } from '@/components/reservagol/FormularioCliente';
@@ -77,6 +78,7 @@ export default async function ClientesPage() {
                             <th scope="col">Abonos registrados</th>
                             <th scope="col">Estado de pago</th>
                             <th scope="col">Reserva</th>
+                            <th scope="col">Gestión</th>
                           </tr>
                         </thead>
                         <tbody>
@@ -101,6 +103,7 @@ export default async function ClientesPage() {
                                   {reserva.estado === 'activa' ? 'Activa' : 'Cancelada'}
                                 </Insignia>
                               </td>
+                              <td><Link className="enlace-reserva" href={`/reservas/${reserva.id}`}>Cobro y detalle</Link></td>
                             </tr>
                           ))}
                         </tbody>

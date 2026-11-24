@@ -11,17 +11,16 @@ type Props = {
 
 export default async function DetalleReservaPage({ params }: Props) {
   const { id } = await params;
-  try {
-    const reserva = await obtenerReserva(id);
-    return (
-      <main className="app-contenido">
-        <PanelCobro reserva={reserva} />
-      </main>
-    );
-  } catch (error) {
+  const reserva = await obtenerReserva(id).catch((error: unknown) => {
     if (error instanceof ErrorDeNegocio && error.codigo === 'RESERVA_NO_ENCONTRADA') {
       notFound();
     }
     throw error;
-  }
+  });
+
+  return (
+    <main className="app-contenido">
+      <PanelCobro reserva={reserva} />
+    </main>
+  );
 }

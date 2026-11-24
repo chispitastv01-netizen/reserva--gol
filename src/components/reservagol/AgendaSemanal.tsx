@@ -10,6 +10,7 @@ import { Campo } from '@/components/ui/Campo';
 import { EstadoVacio } from '@/components/ui/EstadoVacio';
 import { Selector } from '@/components/ui/Selector';
 import { formatearFecha, formatearHora, formatearPesos } from '@/lib/formato';
+import { calcularAnticipoInicial } from '@/lib/reglas/pago';
 import { DIRECCION_SEDE, HORA_APERTURA, HORA_CIERRE } from '@/lib/config/reservagol';
 import type { Cancha, Cliente, Reserva } from '@/lib/datos/tipos';
 
@@ -132,7 +133,7 @@ export function AgendaSemanal({
     ? Math.round(tarifaPorHora * duracionHoras)
     : 0;
   const valorValido = Number.isInteger(valorNumerico) && valorNumerico > 0;
-  const anticipoRequerido = valorValido ? Math.ceil(valorNumerico * 0.25) : 0;
+  const anticipoRequerido = valorValido ? calcularAnticipoInicial(valorNumerico) : 0;
 
   function seleccionarFranja(fecha: string, horaInicio: string) {
     if (!canchaSeleccionada || fecha < hoy) return;

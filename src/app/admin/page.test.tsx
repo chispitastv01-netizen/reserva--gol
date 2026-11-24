@@ -34,7 +34,9 @@ describe('AdminPage', () => {
     expect(screen.getByText('Canceladas')).toBeInTheDocument();
     expect(screen.getByText('Canchas ocupadas')).toBeInTheDocument();
     expect(screen.getByText('Cancha Norte')).toBeInTheDocument();
-    expect(screen.getByRole('link', { name: 'Administrar clientes' })).toHaveAttribute('href', '/reservas/clientes');
+    expect(screen.getByRole('link', { name: 'Clientes' })).toHaveAttribute('href', '/reservas/clientes');
+    expect(screen.getByRole('link', { name: 'Resumen' })).toHaveAttribute('href', '/reservas/resumen');
+    expect(screen.getByRole('link', { name: 'Nueva reserva' })).toHaveAttribute('href', '/reservas/nueva');
   });
 
   it('muestra los datos de contacto y pagos de reservas persistidas', async () => {
@@ -69,6 +71,8 @@ describe('AdminPage', () => {
 
     expect(screen.getByRole('heading', { name: 'Reservas recientes' })).toBeInTheDocument();
     expect(screen.getByRole('link', { name: 'Ana Pérez' })).toHaveAttribute('href', '/reservas/reserva-1');
+    expect(screen.getByRole('link', { name: 'Gestionar cobro' })).toHaveAttribute('href', '/reservas/reserva-1');
+    expect(screen.getByRole('button', { name: 'Cancelar reserva de Ana Pérez' })).toBeInTheDocument();
     expect(screen.getByText('3001234567')).toBeInTheDocument();
     expect(screen.getByText('ana@example.com')).toBeInTheDocument();
     expect(screen.getByText('09:00–10:00')).toBeInTheDocument();

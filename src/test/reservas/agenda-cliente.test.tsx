@@ -75,6 +75,25 @@ describe('AgendaCliente', () => {
     expect(screen.getByLabelText('Correo electrónico')).toBeInTheDocument();
   });
 
+  it('no ofrece duraciones que se crucen con una franja ya ocupada', () => {
+    render(<AgendaCliente
+      canchas={[CANCHA]}
+      ocupadas={[{
+        canchaId: CANCHA.id,
+        fecha: '2026-11-12',
+        horaInicio: '09:00',
+        horaFin: '10:00',
+      }]}
+      fechas={FECHAS}
+      hoy="2026-11-12"
+      canchaInicial={CANCHA.id}
+    />);
+    fireEvent.click(screen.getAllByRole('button', { name: /08:00 libre/i })[0]!);
+
+    expect(screen.getByRole('option', { name: /1 hora · 08:00–09:00/ })).toBeInTheDocument();
+    expect(screen.queryByRole('option', { name: /2 horas · 08:00–10:00/ })).not.toBeInTheDocument();
+  });
+
   it('no muestra franjas libres ni formulario si no hay canchas activas', () => {
     render(<AgendaCliente canchas={[]} ocupadas={[]} fechas={FECHAS} hoy="2026-11-12" canchaInicial="" />);
 
@@ -126,7 +145,7 @@ describe('AgendaCliente', () => {
     render(<AgendaCliente canchas={[CANCHA]} ocupadas={[]} fechas={FECHAS} hoy="2026-11-12" canchaInicial={CANCHA.id} />);
 
     fireEvent.click(screen.getAllByRole('button', { name: /libre/i })[0]!);
-    expect(screen.getByText(/60\.000\/h COP \(tarifa base\)/)).toBeInTheDocument();
+    expect(screen.getByText(/Total · \$60\.000 COP\/h \(tarifa base\)/)).toBeInTheDocument();
     expect(screen.getByText(/15\.000 COP/)).toBeInTheDocument();
     expect(screen.queryByLabelText(/valor total/i)).not.toBeInTheDocument();
 
@@ -161,7 +180,7 @@ describe('AgendaCliente', () => {
     expect(document.querySelector('a[href^="https://wa.me"], a[href^="https://api.whatsapp.com/send"]')).toBeNull();
     expect(abrirWhatsApp).not.toHaveBeenCalled();
     fireEvent.click(screen.getByRole('button', { name: 'Copiar código' }));
-    expect(await screen.findByRole('button', { name: 'Código copiado' })).toBeInTheDocument();
+    expect(await screen.findByRole('button', { name: 'Copiado' })).toBeInTheDocument();
     expect(escribirPortapapeles).toHaveBeenCalledWith('reserva-1');
     fireEvent.click(screen.getByText('Ver detalle completo'));
     expect(screen.getByText('Estado del pago')).toBeInTheDocument();
@@ -171,6 +190,55 @@ describe('AgendaCliente', () => {
       expect.stringContaining('/api/reservas/publica?desde='),
       expect.objectContaining({ cache: 'no-store' }),
     ));
+  });
+
+  it('calcula y confirma un rango de dos horas con total y anticipo coherentes', async () => {
+    fetchMock.mockImplementation(async (_url: string, opciones?: RequestInit) => {
+      if (opciones?.method === 'POST') {
+        return {
+          ok: true,
+          text: async () => JSON.stringify({
+            ok: true,
+            datos: {
+              id: 'reserva-2h',
+              canchaNombre: CANCHA.nombre,
+              estado: 'activa',
+              estadoPago: 'pendiente',
+              valorTotal: 120000,
+              anticipoRequerido: 30000,
+            },
+          }),
+        };
+      }
+      const resultado = { ok: true, datos: { ocupadas: [] } };
+      return { ok: true, json: async () => resultado, text: async () => JSON.stringify(resultado) };
+    });
+    render(<AgendaCliente canchas={[CANCHA]} ocupadas={[]} fechas={FECHAS} hoy="2026-11-12" canchaInicial={CANCHA.id} />);
+
+    fireEvent.click(screen.getAllByRole('button', { name: /08:00 libre/i })[0]!);
+    fireEvent.change(screen.getByLabelText('Duración'), { target: { value: '2' } });
+
+    expect(screen.getByText('08:00–10:00')).toBeInTheDocument();
+    expect(screen.getByText('2 horas')).toBeInTheDocument();
+    expect(screen.getByText('$120.000 COP')).toBeInTheDocument();
+    expect(screen.getByText('$30.000 COP')).toBeInTheDocument();
+    fireEvent.change(screen.getByLabelText('Nombre completo'), { target: { value: 'Ana Prueba' } });
+    fireEvent.change(screen.getByLabelText('Teléfono de contacto'), { target: { value: '3001234567' } });
+    fireEvent.change(screen.getByLabelText('Correo electrónico'), { target: { value: 'ana@example.com' } });
+    fireEvent.click(screen.getByLabelText(/acepto el tratamiento/i));
+    fireEvent.click(screen.getByRole('button', { name: 'Solicitar reserva' }));
+
+    expect(await screen.findByText('reserva-2h')).toBeInTheDocument();
+    expect(JSON.parse(fetchMock.mock.calls[0]?.[1]?.body as string)).toMatchObject({
+      horaInicio: '08:00',
+      horaFin: '10:00',
+    });
+    const comprobante = within(screen.getByRole('status', { name: 'Comprobante de reserva confirmada' }));
+    expect(comprobante.getAllByText('2 horas')).toHaveLength(2);
+    expect(comprobante.getAllByText('$120.000 COP')).toHaveLength(2);
+    expect(comprobante.getAllByText('$30.000 COP')).toHaveLength(2);
+    fireEvent.click(comprobante.getByText('Ver detalle completo'));
+    expect(comprobante.getAllByText('Anticipo requerido (25%)')).toHaveLength(2);
   });
 
   it('conserva ocupada una reserva confirmada si termina tarde una lectura antigua', async () => {

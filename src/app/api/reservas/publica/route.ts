@@ -4,6 +4,7 @@ import { conManejoDeErrores, leerCuerpo, responderOk } from '@/lib/http/respuest
 import { esFechaValida } from '@/lib/reglas/fechas';
 import { esquemaReservaPublica } from '@/lib/validacion/esquemas';
 import { ErrorDeNegocio } from '@/lib/reglas/errores';
+import { calcularAnticipoInicial } from '@/lib/reglas/pago';
 
 export const dynamic = 'force-dynamic';
 
@@ -140,7 +141,7 @@ export const POST = conManejoDeErrores(async (request: Request) => {
     valorTotal: reserva.valorTotal,
     canchaNombre: reserva.canchaNombre,
     estado: 'activa',
-    anticipoRequerido: Math.ceil(reserva.valorTotal * 0.25),
+    anticipoRequerido: calcularAnticipoInicial(reserva.valorTotal),
     estadoPago: 'pendiente',
   }, 201);
 });
