@@ -1,5 +1,5 @@
 import type { PoolClient } from 'pg';
-import { beforeEach, describe, expect, it, vi } from 'vitest';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { crearReserva, crearReservaPublica } from '@/lib/datos/reservas';
 
 const { conTransaccion, consultar, query, exigirCanchaActiva, exigirClienteActivo } = vi.hoisted(() => ({
@@ -20,6 +20,8 @@ const RESERVA_ID = '7d1ef4ac-1a2a-41f0-9dbb-8340c78a27d7';
 
 describe('crearReserva con cliente nuevo', () => {
   beforeEach(() => {
+    vi.useFakeTimers();
+    vi.setSystemTime(new Date('2026-11-19T17:00:00.000Z'));
     query.mockReset().mockImplementation(async (sql: string) => {
       if (sql.includes('SELECT precio_hora')) return { rows: [{ precioHora: 50000 }] };
       if (sql.includes('INSERT INTO clientes')) return { rows: [{ id: CLIENTE_ID }] };
@@ -50,6 +52,10 @@ describe('crearReserva con cliente nuevo', () => {
     consultar.mockReset();
     exigirCanchaActiva.mockReset().mockResolvedValue(undefined);
     exigirClienteActivo.mockReset().mockResolvedValue(undefined);
+  });
+
+  afterEach(() => {
+    vi.useRealTimers();
   });
 
   it('inserta cliente y reserva en una transacción con método y consentimiento', async () => {

@@ -238,3 +238,9 @@
 - Las tarjetas de filtros, matrices, paneles de reserva y resumen usan superficies `#131C2E` con borde blanco al 10%.
 - Selectores, fechas, botones de navegación y modos de cliente mantienen fondos/oscuros y texto legible.
 - Se eliminaron fondos blancos heredados de las vistas de reservas mediante reglas finales de cierre visual.
+
+### P25 · Inicio de producción y pruebas deterministas · 2026-11-23
+
+- Se verificó que `/` y `/login` responden HTTP 200 en producción y se renderizan correctamente en navegador.
+- Se corrigieron cuatro pruebas de creación de reservas que fallaban al depender del reloj real y de una fecha de fixture ya pasada.
+- Next.js/Vercel conserva la detección nativa del framework, sin requerir scripts locales para iniciar producción.

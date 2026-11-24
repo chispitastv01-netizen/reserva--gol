@@ -35,3 +35,8 @@
 - Filtros de `/reservas` en `#131C2E` con borde blanco al 10%.
 - Selectores y fechas con contraste dark mode.
 - Navegación de semana y superficies relacionadas sin blancos heredados.
+
+## Verificación P25
+
+- `/` y `/login` responden HTTP 200 en producción y muestran contenido en navegador.
+- Pruebas de creación de reserva usan un reloj fijo para evitar fallos según la fecha de ejecución.
