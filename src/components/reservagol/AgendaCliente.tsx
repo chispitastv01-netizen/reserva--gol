@@ -10,7 +10,6 @@ import { Selector } from '@/components/ui/Selector';
 import { EstadoVacio } from '@/components/ui/EstadoVacio';
 import { DIRECCION_SEDE, HORA_APERTURA, HORA_CIERRE, PRECIO_HORA_BASE } from '@/lib/config/reservagol';
 import { formatearFecha, formatearHora, formatearPesos } from '@/lib/formato';
-import { normalizarNumeroWhatsApp } from '@/lib/reglas/whatsapp';
 import type { BloqueOcupadoPublico, Cancha } from '@/lib/datos/tipos';
 
 type Props = {
@@ -36,8 +35,7 @@ type ConfirmacionReserva = {
   fecha: string;
   horaInicio: string;
   horaFin: string;
-  whatsappEnviado: boolean;
-  enlaceWhatsApp: string | null;
+  estado: 'activa';
 };
 
 function etiquetaDia(fecha: string) {
@@ -65,11 +63,10 @@ export function AgendaCliente({ canchas, ocupadas, fechas, hoy, canchaInicial }:
   const [errorDisponibilidad, setErrorDisponibilidad] = useState(false);
   const [seleccion, setSeleccion] = useState<Seleccion | null>(null);
   const [nombre, setNombre] = useState('');
-  const [whatsapp, setWhatsapp] = useState('');
+  const [contacto, setContacto] = useState('');
   const [email, setEmail] = useState('');
   const [metodoAnticipo, setMetodoAnticipo] = useState<MetodoAnticipo>('transferencia');
   const [aceptaPrivacidad, setAceptaPrivacidad] = useState(false);
-  const [aceptaComprobanteWhatsApp, setAceptaComprobanteWhatsApp] = useState(false);
   const [guardando, setGuardando] = useState(false);
   const [aviso, setAviso] = useState<{ tipo: 'exito' | 'error'; texto: string } | null>(null);
   const [confirmacion, setConfirmacion] = useState<ConfirmacionReserva | null>(null);
@@ -97,16 +94,6 @@ export function AgendaCliente({ canchas, ocupadas, fechas, hoy, canchaInicial }:
     setSeleccion({ fecha, horaInicio, horaFin });
     setConfirmacion(null);
     setAviso(null);
-  }
-
-  function enviarComprobantePorWhatsApp(enlace: string) {
-    try {
-      window.open(enlace, '_blank', 'noopener,noreferrer');
-    } catch (error) {
-      console.warn('El navegador no pudo abrir WhatsApp automáticamente; el enlace manual sigue disponible.', {
-        tipo: error instanceof Error ? error.name : 'Error desconocido',
-      });
-    }
   }
 
   const actualizarDisponibilidad = useCallback(async (signal?: AbortSignal) => {
@@ -145,8 +132,8 @@ export function AgendaCliente({ canchas, ocupadas, fechas, hoy, canchaInicial }:
   }, [actualizarDisponibilidad]);
 
   async function confirmar() {
-    if (!cancha || !seleccion || !nombre.trim() || !normalizarNumeroWhatsApp(whatsapp) || !/^\S+@\S+\.\S+$/.test(email.trim()) || !aceptaPrivacidad || !aceptaComprobanteWhatsApp || total <= 0) {
-      setAviso({ tipo: 'error', texto: 'Completa tus datos, verifica la tarifa y acepta el tratamiento de datos y el comprobante por WhatsApp.' });
+    if (!cancha || !seleccion || !nombre.trim() || !contacto.trim() || !/^\S+@\S+\.\S+$/.test(email.trim()) || !aceptaPrivacidad || total <= 0) {
+      setAviso({ tipo: 'error', texto: 'Completa tus datos, verifica la tarifa y acepta el tratamiento de datos.' });
       return;
     }
     setGuardando(true);
@@ -157,13 +144,12 @@ export function AgendaCliente({ canchas, ocupadas, fechas, hoy, canchaInicial }:
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           canchaId,
-          clienteNuevo: { nombre: nombre.trim(), contacto: whatsapp.trim(), email: email.trim() },
+          clienteNuevo: { nombre: nombre.trim(), contacto: contacto.trim(), email: email.trim() },
           fecha: seleccion.fecha,
           horaInicio: seleccion.horaInicio,
           horaFin: seleccion.horaFin,
           metodoAnticipo,
           politicasAceptadas: true,
-          comprobanteWhatsappAceptado: true,
         }),
       });
       const textoRespuesta = await response.text();
@@ -173,7 +159,7 @@ export function AgendaCliente({ canchas, ocupadas, fechas, hoy, canchaInicial }:
           canchaNombre?: unknown;
           valorTotal?: unknown;
           anticipoRequerido?: unknown;
-          comprobanteWhatsApp?: { estado?: unknown; enlaceRespaldo?: unknown };
+          estado?: unknown;
         };
         error?: { codigo?: string; mensaje?: string };
       };
@@ -209,9 +195,9 @@ export function AgendaCliente({ canchas, ocupadas, fechas, hoy, canchaInicial }:
       }
       const valorTotal = resultado.datos?.valorTotal;
       const anticipoRequerido = resultado.datos?.anticipoRequerido;
-      const datosWhatsApp = resultado.datos?.comprobanteWhatsApp;
       const idReserva = resultado.datos?.id;
       const canchaNombre = resultado.datos?.canchaNombre;
+      const estadoReserva = resultado.datos?.estado;
       if (
         typeof valorTotal !== 'number' ||
         !Number.isSafeInteger(valorTotal) ||
@@ -219,15 +205,10 @@ export function AgendaCliente({ canchas, ocupadas, fechas, hoy, canchaInicial }:
         !Number.isSafeInteger(anticipoRequerido) ||
         typeof idReserva !== 'string' ||
         typeof canchaNombre !== 'string' ||
-        (datosWhatsApp?.estado !== 'enviado' && datosWhatsApp?.estado !== 'respaldo') ||
-        (datosWhatsApp.estado === 'respaldo' && typeof datosWhatsApp.enlaceRespaldo !== 'string') ||
-        (datosWhatsApp.estado === 'enviado' && datosWhatsApp.enlaceRespaldo !== null)
+        estadoReserva !== 'activa'
       ) {
         throw new Error('Respuesta inválida al confirmar la reserva.');
       }
-      const enlaceWhatsApp = datosWhatsApp.estado === 'respaldo' && typeof datosWhatsApp.enlaceRespaldo === 'string'
-        ? datosWhatsApp.enlaceRespaldo
-        : null;
       setConfirmacion({
         total: valorTotal,
         anticipo: anticipoRequerido,
@@ -236,10 +217,8 @@ export function AgendaCliente({ canchas, ocupadas, fechas, hoy, canchaInicial }:
         fecha: seleccion.fecha,
         horaInicio: seleccion.horaInicio,
         horaFin: seleccion.horaFin,
-        whatsappEnviado: datosWhatsApp.estado === 'enviado',
-        enlaceWhatsApp,
+        estado: estadoReserva,
       });
-      if (enlaceWhatsApp) enviarComprobantePorWhatsApp(enlaceWhatsApp);
       setBloquesOcupados((actuales) => [
         ...actuales,
         {
@@ -287,15 +266,9 @@ export function AgendaCliente({ canchas, ocupadas, fechas, hoy, canchaInicial }:
           <span>Cancha: {confirmacion.canchaNombre}</span>
           <span>Fecha: {formatearFecha(confirmacion.fecha)}</span>
           <span>Hora: {formatearHora(confirmacion.horaInicio)}–{formatearHora(confirmacion.horaFin)}</span>
+          <span>Estado: {confirmacion.estado === 'activa' ? 'Activa' : confirmacion.estado}</span>
           <span>Código de reserva: {confirmacion.id}</span>
           <span>Total: {formatearPesos(confirmacion.total)} · Anticipo pendiente: {formatearPesos(confirmacion.anticipo)}</span>
-          {confirmacion.whatsappEnviado
-            ? <span>El proveedor aceptó el comprobante para envío por WhatsApp.</span>
-            : confirmacion.enlaceWhatsApp && (
-              <a href={confirmacion.enlaceWhatsApp} target="_blank" rel="noopener noreferrer">
-                Abrir WhatsApp para enviar el comprobante
-              </a>
-            )}
         </section>
       )}
       {errorDisponibilidad && (
@@ -339,14 +312,13 @@ export function AgendaCliente({ canchas, ocupadas, fechas, hoy, canchaInicial }:
           <dl className="agenda-reserva-datos"><div><dt>Cancha</dt><dd>{cancha.nombre}</dd></div><div><dt>Fecha</dt><dd>{formatearFecha(seleccion.fecha)}</dd></div><div><dt>Horario</dt><dd>{formatearHora(seleccion.horaInicio)}–{formatearHora(seleccion.horaFin)}</dd></div></dl>
           <div className="agenda-datos-cliente">
             <Campo etiqueta="Nombre completo" autoComplete="name" value={nombre} onChange={(event) => setNombre(event.target.value)} required />
-            <Campo etiqueta="WhatsApp" type="tel" autoComplete="tel" placeholder="3001234567 o +573001234567" value={whatsapp} onChange={(event) => setWhatsapp(event.target.value)} required />
+            <Campo etiqueta="Teléfono de contacto" type="tel" autoComplete="tel" value={contacto} onChange={(event) => setContacto(event.target.value)} required />
             <Campo etiqueta="Correo electrónico" type="email" autoComplete="email" value={email} onChange={(event) => setEmail(event.target.value)} required />
           </div>
           <Selector etiqueta="Método de anticipo" value={metodoAnticipo} onChange={(event) => setMetodoAnticipo(event.target.value as MetodoAnticipo)}><option value="transferencia">Transferencia</option><option value="efectivo">Pago en sede</option></Selector>
           <div className="agenda-total"><div><span>Total · {duracionHoras} h × {formatearPesos(tarifaPorHora).replace(/ COP$/, '')}/h COP{cancha?.precioHora == null ? ' (tarifa base)' : ''}</span><strong>{total ? formatearPesos(total) : 'No disponible'}</strong></div><div className="agenda-anticipo"><span>Anticipo (25%)</span><strong>{anticipo ? formatearPesos(anticipo) : 'No disponible'}</strong></div></div>
           <label className="agenda-privacidad"><input type="checkbox" checked={aceptaPrivacidad} onChange={(event) => setAceptaPrivacidad(event.target.checked)} /><span>Acepto el tratamiento de mis datos personales para gestionar esta reserva.</span></label>
-          <label className="agenda-privacidad"><input type="checkbox" checked={aceptaComprobanteWhatsApp} onChange={(event) => setAceptaComprobanteWhatsApp(event.target.checked)} /><span>Acepto recibir por WhatsApp el comprobante de esta reserva.</span></label>
-          <Boton type="button" className="agenda-confirmar" onClick={confirmar} disabled={guardando || !total || !nombre.trim() || !normalizarNumeroWhatsApp(whatsapp) || !email.trim() || !aceptaPrivacidad || !aceptaComprobanteWhatsApp}>{guardando ? 'Confirmando reserva...' : 'Solicitar reserva'}</Boton>
+          <Boton type="button" className="agenda-confirmar" onClick={confirmar} disabled={guardando || !total || !nombre.trim() || !contacto.trim() || !email.trim() || !aceptaPrivacidad}>{guardando ? 'Confirmando reserva...' : 'Solicitar reserva'}</Boton>
           {aviso && <Aviso tono={aviso.tipo} role="status">{aviso.texto}</Aviso>}
         </aside>}
       </div>

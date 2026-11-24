@@ -35,12 +35,9 @@ describe('AgendaCliente', () => {
             datos: {
               id: 'reserva-1',
               canchaNombre: CANCHA.nombre,
+              estado: 'activa',
               valorTotal: 60000,
               anticipoRequerido: 15000,
-              comprobanteWhatsApp: {
-                estado: 'respaldo',
-                enlaceRespaldo: 'https://wa.me/573001234567?text=reserva',
-              },
             },
           };
       return {
@@ -65,7 +62,7 @@ describe('AgendaCliente', () => {
 
     expect(screen.getByRole('heading', { name: 'Tu reserva' })).toBeInTheDocument();
     expect(screen.getByLabelText('Nombre completo')).toBeInTheDocument();
-    expect(screen.getByLabelText('WhatsApp')).toBeInTheDocument();
+    expect(screen.getByLabelText('Teléfono de contacto')).toBeInTheDocument();
     expect(screen.getByLabelText('Correo electrónico')).toBeInTheDocument();
   });
 
@@ -92,10 +89,9 @@ describe('AgendaCliente', () => {
     render(<AgendaCliente canchas={[CANCHA]} ocupadas={[]} fechas={FECHAS} hoy="2026-11-12" canchaInicial={CANCHA.id} />);
     fireEvent.click(screen.getAllByRole('button', { name: /06:00 libre/i })[0]!);
     fireEvent.change(screen.getByLabelText('Nombre completo'), { target: { value: 'Ana Prueba' } });
-    fireEvent.change(screen.getByLabelText('WhatsApp'), { target: { value: '3001234567' } });
+    fireEvent.change(screen.getByLabelText('Teléfono de contacto'), { target: { value: '3001234567' } });
     fireEvent.change(screen.getByLabelText('Correo electrónico'), { target: { value: 'ana@example.com' } });
     fireEvent.click(screen.getByLabelText(/acepto el tratamiento/i));
-    fireEvent.click(screen.getByLabelText(/acepto recibir por whatsapp/i));
     fireEvent.click(screen.getByRole('button', { name: 'Solicitar reserva' }));
 
     expect(await screen.findByText('La franja ya está ocupada.')).toBeInTheDocument();
@@ -110,7 +106,7 @@ describe('AgendaCliente', () => {
     errorSpy.mockRestore();
   });
 
-  it('calcula tarifa base y anticipo, habilita CTA y envía sin precio manual', async () => {
+  it('confirma en pantalla, marca la franja ocupada y no abre enlaces externos', async () => {
     const abrirWhatsApp = vi.spyOn(window, 'open').mockReturnValue(null);
     render(<AgendaCliente canchas={[CANCHA]} ocupadas={[]} fechas={FECHAS} hoy="2026-11-12" canchaInicial={CANCHA.id} />);
 
@@ -120,10 +116,9 @@ describe('AgendaCliente', () => {
     expect(screen.queryByLabelText(/valor total/i)).not.toBeInTheDocument();
 
     fireEvent.change(screen.getByLabelText('Nombre completo'), { target: { value: 'Ana Prueba' } });
-    fireEvent.change(screen.getByLabelText('WhatsApp'), { target: { value: '3001234567' } });
+    fireEvent.change(screen.getByLabelText('Teléfono de contacto'), { target: { value: '3001234567' } });
     fireEvent.change(screen.getByLabelText('Correo electrónico'), { target: { value: 'ana@example.com' } });
     fireEvent.click(screen.getByLabelText(/acepto el tratamiento/i));
-    fireEvent.click(screen.getByLabelText(/acepto recibir por whatsapp/i));
     const boton = screen.getByRole('button', { name: 'Solicitar reserva' });
     expect(boton).toBeEnabled();
     fireEvent.click(boton);
@@ -138,20 +133,16 @@ describe('AgendaCliente', () => {
         horaFin: '07:00',
         metodoAnticipo: 'transferencia',
         politicasAceptadas: true,
-        comprobanteWhatsappAceptado: true,
       }),
     })));
     expect(JSON.parse(fetchMock.mock.calls[0]?.[1]?.body as string)).not.toHaveProperty('valorTotal');
     expect(await screen.findByText('Código de reserva: reserva-1')).toBeInTheDocument();
-    expect(screen.getByRole('link', { name: 'Abrir WhatsApp para enviar el comprobante' })).toHaveAttribute(
-      'href',
-      'https://wa.me/573001234567?text=reserva',
-    );
-    expect(abrirWhatsApp).toHaveBeenCalledWith(
-      'https://wa.me/573001234567?text=reserva',
-      '_blank',
-      'noopener,noreferrer',
-    );
+    expect(screen.getByText('Cancha: Cancha Norte')).toBeInTheDocument();
+    expect(screen.getByText(/Fecha:/)).toBeInTheDocument();
+    expect(screen.getByText('Hora: 06:00–07:00')).toBeInTheDocument();
+    expect(screen.getByText('Estado: Activa')).toBeInTheDocument();
+    expect(document.querySelector('a[href^="https://wa.me"], a[href^="https://api.whatsapp.com/send"]')).toBeNull();
+    expect(abrirWhatsApp).not.toHaveBeenCalled();
     expect(await screen.findByRole('button', { name: /06:00 ocupada/i })).toBeDisabled();
     expect(screen.queryByRole('heading', { name: 'Tu reserva' })).not.toBeInTheDocument();
     await waitFor(() => expect(fetchMock).toHaveBeenCalledWith(

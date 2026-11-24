@@ -103,7 +103,6 @@ describe('crearReserva con cliente nuevo', () => {
       horaFin: '20:00',
       metodoAnticipo: 'transferencia',
       politicasAceptadas: true,
-      comprobanteWhatsappAceptado: true,
     });
 
     expect(reserva).toEqual({ id: RESERVA_ID, valorTotal: 100000, canchaNombre: 'Cancha Norte' });
@@ -133,7 +132,6 @@ describe('crearReserva con cliente nuevo', () => {
       horaFin: '20:00',
       metodoAnticipo: 'transferencia',
       politicasAceptadas: true,
-      comprobanteWhatsappAceptado: true,
     });
 
     expect(reserva).toEqual({ id: RESERVA_ID, valorTotal: 100000, canchaNombre: 'Cancha Norte' });
@@ -163,7 +161,6 @@ describe('crearReserva con cliente nuevo', () => {
       horaFin: '19:00',
       metodoAnticipo: 'transferencia',
       politicasAceptadas: true,
-      comprobanteWhatsappAceptado: true,
     });
 
     expect(reserva.valorTotal).toBe(60000);

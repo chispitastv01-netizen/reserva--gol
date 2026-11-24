@@ -4,7 +4,6 @@ import { conManejoDeErrores, leerCuerpo, responderOk } from '@/lib/http/respuest
 import { esFechaValida } from '@/lib/reglas/fechas';
 import { esquemaReservaPublica } from '@/lib/validacion/esquemas';
 import { ErrorDeNegocio } from '@/lib/reglas/errores';
-import { enviarComprobanteWhatsApp } from '@/lib/whatsapp/comprobante';
 
 export const dynamic = 'force-dynamic';
 
@@ -136,20 +135,12 @@ export const POST = conManejoDeErrores(async (request: Request) => {
     }
     throw error;
   }
-  const comprobanteWhatsApp = await enviarComprobanteWhatsApp(datos.clienteNuevo.contacto, {
-    id: reserva.id,
-    canchaNombre: reserva.canchaNombre,
-    valorTotal: reserva.valorTotal,
-    fecha: datos.fecha,
-    horaInicio: datos.horaInicio,
-    horaFin: datos.horaFin,
-  });
   return responderOk({
     id: reserva.id,
     valorTotal: reserva.valorTotal,
     canchaNombre: reserva.canchaNombre,
+    estado: 'activa',
     anticipoRequerido: Math.ceil(reserva.valorTotal * 0.25),
     estadoPago: 'pendiente',
-    comprobanteWhatsApp,
   }, 201);
 });

@@ -49,6 +49,10 @@
 
 ## Comprobante P27
 
-- Recibo incluye cancha, fecha, horario, código y reserva confirmada.
-- Envío mediante webhook HTTPS opcional; sin proveedor se ofrece envío inmediato vía `wa.me`.
-- El cliente otorga consentimiento específico y la reserva no se revierte por fallos de mensajería.
+- P27 implementó inicialmente una entrega externa del comprobante; se retiró en P28.
+
+## Confirmación local P28
+
+- Se retiraron completamente la llamada a servicios WhatsApp y la apertura de enlaces externos.
+- Después de crear la reserva, la agenda marca la franja como ocupada y muestra en la misma página el comprobante con cancha, fecha, hora, estado, código y total.
+- No se requieren APIs ni credenciales de mensajería; el teléfono solo se conserva como dato de contacto.

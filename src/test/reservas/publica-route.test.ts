@@ -1,23 +1,17 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { GET, POST } from '@/app/api/reservas/publica/route';
 
-const { crearReservaPublica, enviarComprobanteWhatsApp, listarBloquesOcupadosPublicos, listarCanchas } = vi.hoisted(() => ({
+const { crearReservaPublica, listarBloquesOcupadosPublicos, listarCanchas } = vi.hoisted(() => ({
   crearReservaPublica: vi.fn(),
-  enviarComprobanteWhatsApp: vi.fn(),
   listarBloquesOcupadosPublicos: vi.fn(),
   listarCanchas: vi.fn(),
 }));
 
 vi.mock('@/lib/dataService', () => ({ crearReservaPublica, listarBloquesOcupadosPublicos, listarCanchas }));
-vi.mock('@/lib/whatsapp/comprobante', () => ({ enviarComprobanteWhatsApp }));
 
 describe('API pública de reservas', () => {
   beforeEach(() => {
     crearReservaPublica.mockReset().mockResolvedValue({ id: 'reserva-1', valorTotal: 50000, canchaNombre: 'Cancha Norte' });
-    enviarComprobanteWhatsApp.mockReset().mockResolvedValue({
-      estado: 'respaldo',
-      enlaceRespaldo: 'https://wa.me/573001234567?text=comprobante',
-    });
     listarCanchas.mockReset().mockResolvedValue([{ id: 'cancha-1', nombre: 'Cancha Norte', precioHora: 50000, activa: true }]);
     listarBloquesOcupadosPublicos.mockReset().mockResolvedValue([
       { canchaId: 'cancha-1', fecha: '2026-11-20', horaInicio: '18:00', horaFin: '19:00' },
@@ -52,7 +46,7 @@ describe('API pública de reservas', () => {
         canchaId: '98b5f05a-7f6d-4c35-96a1-e338d770c09a',
         clienteNuevo: { nombre: 'Cliente Público', contacto: '3001234567', email: 'cliente@example.com' },
         fecha: '2026-11-20', horaInicio: '18:00', horaFin: '19:00',
-        metodoAnticipo: 'transferencia', politicasAceptadas: true, comprobanteWhatsappAceptado: true,
+        metodoAnticipo: 'transferencia', politicasAceptadas: true,
       }),
     }));
     const body = await response.json();
@@ -62,27 +56,10 @@ describe('API pública de reservas', () => {
       id: 'reserva-1',
       valorTotal: 50000,
       canchaNombre: 'Cancha Norte',
+      estado: 'activa',
       anticipoRequerido: 12500,
       estadoPago: 'pendiente',
-      comprobanteWhatsApp: {
-        estado: 'respaldo',
-        enlaceRespaldo: 'https://wa.me/573001234567?text=comprobante',
-      },
     });
-    expect(enviarComprobanteWhatsApp).toHaveBeenCalledWith(
-      '3001234567',
-      expect.objectContaining({
-        id: 'reserva-1',
-        canchaNombre: 'Cancha Norte',
-        valorTotal: 50000,
-        fecha: '2026-11-20',
-        horaInicio: '18:00',
-        horaFin: '19:00',
-      }),
-    );
-    expect(crearReservaPublica.mock.invocationCallOrder[0]).toBeLessThan(
-      enviarComprobanteWhatsApp.mock.invocationCallOrder[0]!,
-    );
     expect(JSON.stringify(body)).not.toContain('cliente@example.com');
     expect(crearReservaPublica).toHaveBeenCalledWith(expect.objectContaining({ horaInicio: '18:00' }));
     expect(logSpy).toHaveBeenCalledWith(
@@ -114,7 +91,7 @@ describe('API pública de reservas', () => {
         canchaId: '98b5f05a-7f6d-4c35-96a1-e338d770c09a',
         clienteNuevo: { nombre: 'Cliente Público', contacto: '3001234567', email: 'cliente@example.com' },
         fecha: '2026-11-20', horaInicio: '18:00', horaFin: '19:00',
-        metodoAnticipo: 'transferencia', politicasAceptadas: true, comprobanteWhatsappAceptado: true,
+        metodoAnticipo: 'transferencia', politicasAceptadas: true,
       }),
     }));
 
@@ -139,7 +116,7 @@ describe('API pública de reservas', () => {
         canchaId: '98b5f05a-7f6d-4c35-96a1-e338d770c09a',
         clienteNuevo: { nombre: 'Cliente Público', contacto: '3001234567', email: 'cliente@example.com' },
         fecha: '2026-11-20', horaInicio: '18:00', horaFin: '19:00',
-        metodoAnticipo: 'transferencia', politicasAceptadas: true, comprobanteWhatsappAceptado: true,
+        metodoAnticipo: 'transferencia', politicasAceptadas: true,
       }),
     }));
 
@@ -156,7 +133,6 @@ describe('API pública de reservas', () => {
     });
     expect(JSON.stringify(detalle)).not.toContain('sensitive row value');
     expect(body.error.mensaje).not.toContain('column missing');
-    expect(enviarComprobanteWhatsApp).not.toHaveBeenCalled();
   });
 
   it('rechaza origen cruzado', async () => {
@@ -181,44 +157,4 @@ describe('API pública de reservas', () => {
     expect(crearReservaPublica).not.toHaveBeenCalled();
   });
 
-  it('exige consentimiento para el comprobante por WhatsApp antes de crear la reserva', async () => {
-    const response = await POST(new Request('http://localhost/api/reservas/publica', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json', Origin: 'http://localhost' },
-      body: JSON.stringify({
-        canchaId: '98b5f05a-7f6d-4c35-96a1-e338d770c09a',
-        clienteNuevo: { nombre: 'Cliente Público', contacto: '3001234567', email: 'cliente@example.com' },
-        fecha: '2026-11-20',
-        horaInicio: '18:00',
-        horaFin: '19:00',
-        metodoAnticipo: 'transferencia',
-        politicasAceptadas: true,
-      }),
-    }));
-
-    expect(response.status).toBe(400);
-    expect(crearReservaPublica).not.toHaveBeenCalled();
-    expect(enviarComprobanteWhatsApp).not.toHaveBeenCalled();
-  });
-
-  it('rechaza un número celular colombiano inválido antes de guardar', async () => {
-    const response = await POST(new Request('http://localhost/api/reservas/publica', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json', Origin: 'http://localhost' },
-      body: JSON.stringify({
-        canchaId: '98b5f05a-7f6d-4c35-96a1-e338d770c09a',
-        clienteNuevo: { nombre: 'Cliente Público', contacto: '6015550000', email: 'cliente@example.com' },
-        fecha: '2026-11-20',
-        horaInicio: '18:00',
-        horaFin: '19:00',
-        metodoAnticipo: 'transferencia',
-        politicasAceptadas: true,
-        comprobanteWhatsappAceptado: true,
-      }),
-    }));
-
-    expect(response.status).toBe(400);
-    expect(crearReservaPublica).not.toHaveBeenCalled();
-    expect(enviarComprobanteWhatsApp).not.toHaveBeenCalled();
-  });
 });
